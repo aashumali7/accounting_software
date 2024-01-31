@@ -13,7 +13,15 @@ class DatabaseManager:
         self.create_table()
         
     #3. Method/Function/Behaviours
-   
+    def get_user_count(self):
+        try:
+            self.cur.execute("SELECT COUNT(*) FROM users")
+            result = self.cur.fetchone()
+            return result[0] if result else 0
+        except Exception as e:
+            print("Error getting user count:", e)
+            return 0
+
     def create_table(self):
         # Step 1: Open a database connection
                     # module.method(aa)

@@ -1,60 +1,90 @@
-from PyQt6.QtWidgets import QGridLayout,QWidget,QLabel,QLineEdit,QApplication, QMainWindow, QPushButton, QVBoxLayout, QDialog
+import sys
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QGroupBox, QStackedWidget,QMessageBox
+from lib.database import DatabaseManager  # Import your DatabaseManager class
 
-from lib.database import DatabaseManager
+class RegistrationForm(QWidget):
+    def __init__(self, stack_widget, db):
+        super().__init__()
 
-class RegisterForm(QWidget):
-    #1. Property/Variables/State
-    
-    #2. Constructor
-    def __init__(self):
-        super().__init__()# We are calling the parent constructor
-        self.db_manager = DatabaseManager()
-        self.setStyleSheet("background-color:#eee")
+        self.stack_widget = stack_widget
+        self.db = db
+
         self.init_ui()
-        pass
-    
+
     def init_ui(self):
-        layout = QVBoxLayout()
+        layout = QFormLayout()
 
-        label_username = QLabel('Username:')
-        self.edit_username = QLineEdit()
+        # Registration Page Widgets
+        username_label = QLabel("Username:")
+        self.username_input = QLineEdit()
+        layout.addRow(username_label, self.username_input)
 
-        label_password = QLabel('Password:')
-        self.edit_password = QLineEdit()
-        self.edit_password.setEchoMode(QLineEdit.EchoMode.Password)
-        
-        label_cpassword = QLabel('Confirm Password:')
-        self.edit_cpassword = QLineEdit()
-        self.edit_cpassword.setEchoMode(QLineEdit.EchoMode.Password)
+        password_label = QLabel("Password:")
+        self.password_input = QLineEdit()
+        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addRow(password_label, self.password_input)
 
-        btn_register = QPushButton('Register')
-        btn_register.clicked.connect(self.register_clicked)
+        confirm_password_label = QLabel("Confirm Password:")
+        self.confirm_password_input = QLineEdit()
+        self.confirm_password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addRow(confirm_password_label, self.confirm_password_input)
 
-        layout.addWidget(label_username)
-        layout.addWidget(self.edit_username)
-        layout.addWidget(label_password)
-        layout.addWidget(self.edit_password)
-        layout.addWidget(label_cpassword)
-        layout.addWidget(self.edit_cpassword)
-        layout.addWidget(btn_register)
+        # Increase the vertical spacing between rows
+        layout.setVerticalSpacing(70)
 
-        self.setLayout(layout)
-        pass
-    #3. Method/Function/Behaviours
-    def register_clicked(self):
-        username = self.edit_username.text()
-        password = self.edit_password.text()
-        cpassword = self.edit_cpassword.text()
-        print(username)
-        print(password)
-        print(cpassword)
+        register_button = QPushButton("Register")
+        register_button.clicked.connect(self.on_register_clicked)
+        register_button.setStyleSheet("background-color: blue; color: white;")
+        layout.addRow(register_button)
 
-        if password == cpassword:
-                  # ceo.method(aa1,aa2)
-            if self.db_manager.register_user(username, password):#aa1,aa2
-                print("User registered successfully")
+        group_box = QGroupBox("Registration")
+        group_box.setLayout(layout)
+        group_box.setFixedWidth(600)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(group_box, alignment=Qt.AlignmentFlag.AlignCenter)  # Center the widget
+        self.setStyleSheet("background-color: #D9D9D9;")  # Set the background color
+
+    def on_register_clicked(self):
+        username = self.username_input.text()
+        password = self.password_input.text()
+
+        # Check if passwords match and username is not empty
+        if password == self.confirm_password_input.text() and username:
+            # Perform registration in the database
+            if self.db.register_user(username, password):
+                print("Registration successful!")
+
+                 # Show a success popup
+                QMessageBox.information(None, "Registration Success", "User registered successfully!")
+                self.stack_widget.setCurrentIndex(0)  # Switch to Login Page
             else:
-                print("Username already exists")
+                print("Registration failed. Username might already exist.")
         else:
-            print("Passwords do not match")
-    pass
+            print("Invalid username or passwords do not match!")
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
+    db = DatabaseManager()  # Create an instance of your DatabaseManager class
+
+    # Assuming you have a QStackedWidget managing multiple pages
+    stacked_widget = QStackedWidget()
+    login_page = LoginForm(stacked_widget, db)
+    registration_page = RegistrationForm(stacked_widget, db)
+    # Add more pages to the stacked widget if needed
+
+    stacked_widget.addWidget(login_page)
+    stacked_widget.addWidget(registration_page)
+    # Add more pages to the stacked widget if needed
+
+    main_window = QWidget()
+    main_layout = QVBoxLayout(main_window)
+    main_layout.addWidget(stacked_widget)
+
+    main_window.setWindowTitle("Registration ")
+    main_window.setGeometry(100, 100, 1200, 800)
+    main_window.show()
+
+    sys.exit(app.exec())

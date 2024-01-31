@@ -1,34 +1,43 @@
-from PyQt6.QtWidgets import QGridLayout,QWidget,QLabel,QLineEdit,QApplication, QMainWindow, QPushButton, QVBoxLayout, QDialog
-
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QGroupBox
 
 class LoginForm(QWidget):
-    #1. Property/Variables/State
-    
-    #2. Constructor
-    def __init__(self):
-        super().__init__()# We are calling the parent constructor
+    def __init__(self, stack_widget):
+        super().__init__()
+
+        self.stack_widget = stack_widget
+
         self.init_ui()
-        pass
-    
+
     def init_ui(self):
-        layout = QVBoxLayout()
+        layout = QFormLayout()
 
-        label_username = QLabel('Username:')
-        self.edit_username = QLineEdit()
+        # Login Page Widgets
+        username_label = QLabel("Username:")
+        self.username_input = QLineEdit()
+        layout.addRow(username_label, self.username_input)
 
-        label_password = QLabel('Password:')
-        self.edit_password = QLineEdit()
-        self.edit_password.setEchoMode(QLineEdit.EchoMode.Password)
+        password_label = QLabel("Password:")
+        self.password_input = QLineEdit()
+        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addRow(password_label, self.password_input)
 
-        btn_register = QPushButton('Login')
-        #btn_register.clicked.connect(self.register_clicked)
+        # Increase the vertical spacing between rows
+        layout.setVerticalSpacing(20)
 
-        layout.addWidget(label_username)
-        layout.addWidget(self.edit_username)
-        layout.addWidget(label_password)
-        layout.addWidget(self.edit_password)
-        layout.addWidget(btn_register)
+        login_button = QPushButton("Login")
+        login_button.setStyleSheet("background-color: blue; color: white;")
+        login_button.clicked.connect(self.on_login_clicked)
+        layout.addRow(login_button)
 
-        self.setLayout(layout)
-        pass
-    pass
+        group_box = QGroupBox("Login")
+        group_box.setLayout(layout)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(group_box, alignment=Qt.AlignmentFlag.AlignCenter)  # Center the widget
+        self.setStyleSheet("background-color: #D9D9D9;")  # Set the background color
+
+    def on_login_clicked(self):
+        # Add authentication logic here (e.g., check username and password)
+        # For simplicity, let's assume login is always successful
+        self.stack_widget.setCurrentIndex(1)  # Switch to Registration Page
