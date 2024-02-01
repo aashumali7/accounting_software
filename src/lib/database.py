@@ -13,15 +13,7 @@ class DatabaseManager:
         self.create_table()
         
     #3. Method/Function/Behaviours
-    def get_user_count(self):
-        try:
-            self.cur.execute("SELECT COUNT(*) FROM users")
-            result = self.cur.fetchone()
-            return result[0] if result else 0
-        except Exception as e:
-            print("Error getting user count:", e)
-            return 0
-
+   
     def create_table(self):
         # Step 1: Open a database connection
                     # module.method(aa)
@@ -82,6 +74,18 @@ class DatabaseManager:
         except sqlite3.IntegrityError:
             # Unique constraint violated, username already exists
             return False
+
+    def login_user(self, username, password):
+        self.cur.execute("SELECT id, username FROM users WHERE username=?", (username,))
+        user_info = self.cur.fetchone()
+        if user_info:
+            self.cur.execute("SELECT password FROM users WHERE username=?", (username,))
+            hashed_password = self.cur.fetchone()[0]
+            if bcrypt.checkpw(password.encode('utf-8'), hashed_password):
+                return True
+        else:
+            False
+        
 
     def close(self):
         self.conn.close()

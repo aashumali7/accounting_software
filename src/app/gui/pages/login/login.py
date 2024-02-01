@@ -1,12 +1,15 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QGroupBox
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QGroupBox, QStackedWidget, QMessageBox
+from lib.database import DatabaseManager
+from app.gui.pages.dashboard.dashboard import DashboardPage  # Import your DashboardPage class
+
 
 class LoginForm(QWidget):
-    def __init__(self, stack_widget):
+    def __init__(self, stack_widget, db):
         super().__init__()
 
         self.stack_widget = stack_widget
-
+        self.db = db
         self.init_ui()
 
     def init_ui(self):
@@ -20,6 +23,10 @@ class LoginForm(QWidget):
         password_label = QLabel("Password:")
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+
+        # Connect the returnPressed signal to the on_login_clicked method
+        self.password_input.returnPressed.connect(self.on_login_clicked)
+
         layout.addRow(password_label, self.password_input)
 
         # Increase the vertical spacing between rows
@@ -38,6 +45,19 @@ class LoginForm(QWidget):
         self.setStyleSheet("background-color: #D9D9D9;")  # Set the background color
 
     def on_login_clicked(self):
-        # Add authentication logic here (e.g., check username and password)
-        # For simplicity, let's assume login is always successful
-        self.stack_widget.setCurrentIndex(1)  # Switch to Registration Page
+        username = self.username_input.text()
+        password = self.password_input.text()
+
+        if self.db.login_user(username, password):
+            print("Login successful!")
+
+            # Navigate to the DashboardPage upon successful login
+            dashboard_page = DashboardPage()
+            self.stack_widget.addWidget(dashboard_page)
+            self.stack_widget.setCurrentWidget(dashboard_page)
+        else:
+            # Show a failure popup
+            QMessageBox.critical(None, "Login Failed", "Invalid username or password!")
+            print("Login failed. Invalid username or password.")
+        
+        

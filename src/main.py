@@ -3,8 +3,9 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout, QSt
 from PyQt6.QtGui import QIcon
 
 
-from app.gui.forms.login.login import LoginForm
-from app.gui.forms.register.register import RegistrationForm
+from app.gui.pages.login.login import LoginForm
+from app.gui.pages.register.register import RegistrationForm
+from app.gui.pages.dashboard.dashboard import DashboardPage
 from lib.database import DatabaseManager
 
 class MainWindow(QMainWindow):
@@ -28,15 +29,12 @@ class MainWindow(QMainWindow):
             self.stacked_widget.setCurrentWidget(registration_form)
             print('Show The Registration Form')
         else:
-            login_page = LoginForm(self.stacked_widget)
+            login_page = LoginForm(self.stacked_widget, self.db)
             self.stacked_widget.addWidget(login_page)
             self.stacked_widget.setCurrentWidget(login_page)
             print('Show The Login Form')
 
         self.setCentralWidget(self.stacked_widget)
-
-
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
