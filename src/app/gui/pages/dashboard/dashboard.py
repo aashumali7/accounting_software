@@ -63,7 +63,7 @@ class DashboardPage(QWidget):
 
         # Align the layout to the top
         blue_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-
+        
         # Move language dropdown to the place of "Additional Information" label
         language_dropdown = QComboBox()
         language_dropdown.addItem("English")
@@ -116,6 +116,39 @@ class DashboardPage(QWidget):
         blue_layout.addWidget(button_items, alignment=Qt.AlignmentFlag.AlignTop)
         blue_layout.addWidget(button_sale_register, alignment=Qt.AlignmentFlag.AlignTop)
 
+        # Add stretch to push the buttons a little higher
+        blue_layout.addStretch()
+
+        # Create logout button
+        button_logout = QPushButton("Logout")
+
+        # Set button styles for the logout button
+        logout_button_styles = """
+            QPushButton {
+                background-color: none;
+                color: black;
+                border: gold;
+                font-weight: bold;
+            }
+        """
+
+        logout_button_hover_style = """
+            QPushButton:hover {
+                cursor: pointinghand;
+            }
+        """
+
+        button_logout.setStyleSheet(logout_button_styles + logout_button_hover_style)
+
+        # Set cursor for the logout button
+        button_logout.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        # Connect the logout button to the logout method
+        button_logout.clicked.connect(self.logout)
+
+        # Add the logout button to the blue layout at the bottom
+        blue_layout.addWidget(button_logout, alignment=Qt.AlignmentFlag.AlignBottom)
+
         main_layout.addWidget(blue_section, 1)  # Set the blue section to take 20% of the available width
 
         # Set the layout for the main widget
@@ -131,6 +164,10 @@ class DashboardPage(QWidget):
 
         # Show the custom popup
         custom_popup.exec()
+
+    def logout(self):
+        # Add the logout logic here
+        print("Logout button clicked")
 
 if __name__ == "__main__":
     import sys
