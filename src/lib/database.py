@@ -86,6 +86,14 @@ class DatabaseManager:
         else:
             False
         
+    def selectCompany(self):
+        #2 Build the query
+        self.cur.execute("SELECT * FROM companies")
+        
+        # Execute the query and fetch the result
+        result =  self.cur.fetchall()
+        return result
+        pass
 
     def close(self):
         self.conn.close()

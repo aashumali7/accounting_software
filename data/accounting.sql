@@ -4,6 +4,12 @@ CREATE TABLE IF NOT EXISTS users (
     password TEXT NOT NULL COLLATE NOCASE,
     role TEXT CHECK(role IN ('admin', 'accountant', 'operator'))
 );
+CREATE TABLE IF NOT EXISTS companies (
+    company_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_name TEXT NOT NULL COLLATE NOCASE
+);
+
+
 CREATE TABLE IF NOT EXISTS customers ( 
     id   INTEGER PRIMARY KEY,
     name TEXT NOT NULL COLLATE NOCASE
