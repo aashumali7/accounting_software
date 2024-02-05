@@ -6,9 +6,9 @@ CREATE TABLE IF NOT EXISTS users (
 );
 CREATE TABLE IF NOT EXISTS companies (
     company_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_name TEXT NOT NULL COLLATE NOCASE
+    company_name TEXT NOT NULL COLLATE NOCASE,
+    financial_year TEXT
 );
-
 
 CREATE TABLE IF NOT EXISTS customers ( 
     id   INTEGER PRIMARY KEY,
