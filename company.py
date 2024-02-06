@@ -1,8 +1,35 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QFormLayout, QLineEdit, QComboBox, QLabel, QMessageBox
-from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QFormLayout, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView
+from PyQt6.QtGui import QFont, QColor, QKeyEvent
+from PyQt6.QtGui import QFont, QColor, QKeyEvent
 from PyQt6.QtCore import Qt
+
 from src.lib.database import DatabaseManager
+
+class RoundedButton(QPushButton):
+    def __init__(self, text='', parent=None):
+        super().__init__(text, parent)
+        self.setStyleSheet("""
+            QPushButton {
+                background-color: #6A4B08; /* green*/
+                border: none;
+                color: white;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 15px;
+                border-radius: 15px;
+                width: 120px;
+                height: 40px;
+            }
+            QPushButton:hover {
+                background-color: #283FE8; /* Darker Green */
+            }
+            QPushButton:pressed {
+                background-color: #0EC5FF; /* Green */
+            }
+        """)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
 
 class CompanyForm(QDialog):
     def __init__(self):
@@ -35,8 +62,8 @@ class CompanyForm(QDialog):
 
         # OK and Cancel buttons
         buttons_layout = QHBoxLayout()
-        ok_button = QPushButton('OK', self)
-        cancel_button = QPushButton('Cancel', self)
+        ok_button = RoundedButton('OK', self)
+        cancel_button = RoundedButton('Cancel', self)
 
         ok_button.clicked.connect(self.accept)
         cancel_button.clicked.connect(self.reject)
@@ -45,6 +72,14 @@ class CompanyForm(QDialog):
         buttons_layout.addWidget(cancel_button)
 
         layout.addRow(buttons_layout)
+
+    def accept(self):
+        # Check if company name field is empty
+        if self.company_name_edit.text().strip() == '':
+            QMessageBox.warning(self, 'Warning', 'Company name cannot be empty.')
+            return
+        else:
+            super().accept()
 
 class BasicWindow(QWidget):
     def __init__(self):
@@ -64,14 +99,9 @@ class BasicWindow(QWidget):
         create_company_layout = QVBoxLayout()
 
         # Add the create company button
-        create_company_button = QPushButton('Create Company', self)
+        create_company_button = RoundedButton('Create Company', self)
         create_company_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         create_company_button.clicked.connect(self.show_company_form)
-        
-        # Set button text to bold
-        font = create_company_button.font()
-        font.setBold(True)
-        create_company_button.setFont(font)
         
         create_company_layout.addWidget(create_company_button)
 
@@ -79,12 +109,15 @@ class BasicWindow(QWidget):
         main_layout.addLayout(create_company_layout)
 
         # Create a table
-        self.company_table = QTableWidget(self)
+        self.company_table = MyTableWidget(self)  # Use custom table widget
         main_layout.addWidget(self.company_table)
 
         # Set stretch factor to make the table columns responsive
         header = self.company_table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+        # Set selection behavior to select entire rows
+        self.company_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
         # Fill the table with data
         self.populate_table()
@@ -95,56 +128,40 @@ class BasicWindow(QWidget):
     def populate_table(self):
         # Fetch data from the database
         company_data = self.db.select_company()
+        print("Company data:", company_data)
 
-        # Set the number of rows and columns in the table
-        num_rows = len(company_data)
-        num_cols = len(company_data[0]) if num_rows > 0 else 0
+        if company_data:
+            num_rows = len(company_data)
 
-        self.company_table.setRowCount(num_rows)
-        self.company_table.setColumnCount(num_cols + 1)  # Add 1 for the extra column
+            self.company_table.setRowCount(num_rows)
+            self.company_table.setColumnCount(2)  # Fixed number of columns (Company Name, Financial Year)
 
-        if num_rows > 0:
             # Populate the table with data
             for row_index, row_data in enumerate(company_data):
-                for col_index, col_value in enumerate(row_data):
+                for col_index, col_value in enumerate(row_data[1:]):  # Exclude ID column
                     item = QTableWidgetItem(str(col_value))
-                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)  # Center align the text
-                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)  # Make the item not editable
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                     self.company_table.setItem(row_index, col_index, item)
 
-                # Add a fixed "Login" button in the last column
-                login_button = QPushButton('Login', self)
-                login_button.clicked.connect(self.login_clicked)
-                self.company_table.setCellWidget(row_index, num_cols, login_button)
-
             # Add labels at the top of the table
-            header_labels = ['Id', 'Company Name', 'Financial Year', "Action"]  # Updated header_labels
+            header_labels = ['Company Name', 'Financial Year']  # Updated header_labels
             for col_index, label in enumerate(header_labels):
                 header_item = QTableWidgetItem(label)
                 header_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)  # Center align the text
+                header_item.setFont(QFont('', -1, QFont.Weight.Bold))  # Make the label bold
                 self.company_table.setHorizontalHeaderItem(col_index, header_item)
 
-            # Set the size of the "Id" column
-            self.company_table.setColumnWidth(0, 50)  # Set a fixed width for the ID column
-            self.company_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+            # Set the size of the columns
+            self.company_table.setColumnWidth(0, 120)  # Adjust the width as needed for Company Name
+            self.company_table.setColumnWidth(1, 80)  # Adjust the width as needed for Financial Year
 
-            # Set the size of the "Company Name" column
-            self.company_table.setColumnWidth(1, 120)  # Adjust the width as needed
-            self.company_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-
-            # Set the size of the "Financial Year" column
-            self.company_table.setColumnWidth(2, 80)  # Adjust the width as needed
-            self.company_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
-
-            # Set stretch factor to make the other columns responsive
-            for col_index in range(3, num_cols + 1):  # Adjust the range
-                self.company_table.horizontalHeader().setSectionResizeMode(col_index, QHeaderView.ResizeMode.Stretch)
+            # Set stretch factor to make the columns responsive
+            self.company_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         else:
-            # No data, clear the header labels and set column sizes
+            # No data, clear the header labels
+            self.company_table.clear()
             self.company_table.setHorizontalHeaderLabels([])
-            self.company_table.setColumnWidth(0, 50)  # Set a fixed width for the ID column
-            self.company_table.setColumnWidth(1, 120)
-            self.company_table.setColumnWidth(2, 80)
 
     def show_company_form(self):
         company_form = CompanyForm()
@@ -167,9 +184,26 @@ class BasicWindow(QWidget):
             print(f'Company Name: {company_name}')
             print(f'Financial Year: {financial_year}')
 
-    def login_clicked(self):
-        # Implement the login functionality here
-        QMessageBox.information(self, 'Login', 'Login button clicked.')
+class MyTableWidget(QTableWidget):
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Tab:
+            current_row = self.currentRow()
+            current_col = self.currentColumn()
+
+            # Move to the next row
+            next_row = current_row + 1 if current_row < self.rowCount() - 1 else 0
+            self.setCurrentCell(next_row, current_col)
+
+            # Select entire row
+            self.selectRow(next_row)
+        elif event.key() == Qt.Key.Key_Return:
+            current_row = self.currentRow()
+            item = self.item(current_row, 0)
+            if item is not None:
+                company_name = item.text()
+                QMessageBox.information(self, 'Company Name', f'Company Name: {company_name}')
+        else:
+            super().keyPressEvent(event)
 
 def main():
     app = QApplication(sys.argv)
