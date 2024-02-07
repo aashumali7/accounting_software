@@ -146,13 +146,16 @@ class BasicWindow(QWidget):
         print("Company data:", company_data)
 
         if company_data:
-            num_rows = len(company_data)
+            # Sort company data by company name (assuming the company name is in the first column)
+            sorted_company_data = sorted(company_data, key=lambda x: x[1])
+
+            num_rows = len(sorted_company_data)
 
             self.company_table.setRowCount(num_rows)
             self.company_table.setColumnCount(2)  # Fixed number of columns (Company Name, Financial Year)
 
-            # Populate the table with data
-            for row_index, row_data in enumerate(company_data):
+            # Populate the table with sorted data
+            for row_index, row_data in enumerate(sorted_company_data):
                 for col_index, col_value in enumerate(row_data[1:]):  # Exclude ID column
                     item = QTableWidgetItem(str(col_value))
                     item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
