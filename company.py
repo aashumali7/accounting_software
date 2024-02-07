@@ -1,9 +1,9 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QFormLayout, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView
-from PyQt6.QtGui import QFont, QColor, QKeyEvent
-from PyQt6.QtGui import QFont, QColor, QKeyEvent
+from PyQt6.QtGui import QFont, QColor, QKeyEvent,QKeySequence,QShortcut
 from PyQt6.QtCore import Qt
 
+# Assuming this is your custom database manager module
 from src.lib.database import DatabaseManager
 
 class RoundedButton(QPushButton):
@@ -31,6 +31,16 @@ class RoundedButton(QPushButton):
         """)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
+class EnterLineEdit(QLineEdit):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+            self.focusNextChild()
+        else:
+            super().keyPressEvent(event)
+
 class CompanyForm(QDialog):
     def __init__(self):
         super().__init__()
@@ -41,12 +51,12 @@ class CompanyForm(QDialog):
         layout = QFormLayout(self)
 
         # Company details fields
-        self.company_name_edit = QLineEdit(self)
-        self.address_edit = QLineEdit(self)
-        self.city_edit = QLineEdit(self)
-        self.pincode_edit = QLineEdit(self)
-        self.mobile_edit = QLineEdit(self)
-        self.email_edit = QLineEdit(self)
+        self.company_name_edit = EnterLineEdit(self)
+        self.address_edit = EnterLineEdit(self)
+        self.city_edit = EnterLineEdit(self)
+        self.pincode_edit = EnterLineEdit(self)
+        self.mobile_edit = EnterLineEdit(self)
+        self.email_edit = EnterLineEdit(self)
         
         # Financial Year dropdown
         self.financial_year_combo = QComboBox(self)
@@ -73,20 +83,25 @@ class CompanyForm(QDialog):
 
         layout.addRow(buttons_layout)
 
-    def accept(self):
-        # Check if company name field is empty
-        if self.company_name_edit.text().strip() == '':
-            QMessageBox.warning(self, 'Warning', 'Company name cannot be empty.')
-            return
-        else:
-            super().accept()
+        # Connect Enter key
+        self.company_name_edit.returnPressed.connect(self.address_edit.setFocus)
+        self.address_edit.returnPressed.connect(self.city_edit.setFocus)
+        self.city_edit.returnPressed.connect(self.pincode_edit.setFocus)
+        self.pincode_edit.returnPressed.connect(self.mobile_edit.setFocus)
+        self.mobile_edit.returnPressed.connect(self.email_edit.setFocus)
+        self.email_edit.returnPressed.connect(ok_button.click)
 
 class BasicWindow(QWidget):
     def __init__(self):
         super().__init__()
+        # Create a shortcut for Alt+C
+        shortcut = QShortcut(QKeySequence("Alt+C"), self)
+        shortcut.activated.connect(self.show_company_form)
+
         self.db = DatabaseManager()
         self.init_ui()
-
+    
+            
     def init_ui(self):
         # Set up the main window
         self.setWindowTitle('Basic PyQt6 Window')
@@ -109,7 +124,7 @@ class BasicWindow(QWidget):
         main_layout.addLayout(create_company_layout)
 
         # Create a table
-        self.company_table = MyTableWidget(self)  # Use custom table widget
+        self.company_table = QTableWidget(self)  # Use custom table widget
         main_layout.addWidget(self.company_table)
 
         # Set stretch factor to make the table columns responsive
@@ -183,27 +198,6 @@ class BasicWindow(QWidget):
             # Process the form data as needed
             print(f'Company Name: {company_name}')
             print(f'Financial Year: {financial_year}')
-
-class MyTableWidget(QTableWidget):
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Tab:
-            current_row = self.currentRow()
-            current_col = self.currentColumn()
-
-            # Move to the next row
-            next_row = current_row + 1 if current_row < self.rowCount() - 1 else 0
-            self.setCurrentCell(next_row, current_col)
-
-            # Select entire row
-            self.selectRow(next_row)
-        elif event.key() == Qt.Key.Key_Return:
-            current_row = self.currentRow()
-            item = self.item(current_row, 0)
-            if item is not None:
-                company_name = item.text()
-                QMessageBox.information(self, 'Company Name', f'Company Name: {company_name}')
-        else:
-            super().keyPressEvent(event)
 
 def main():
     app = QApplication(sys.argv)
