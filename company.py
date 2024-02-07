@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QFormLayout, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView
-from PyQt6.QtGui import QFont, QColor, QKeyEvent,QKeySequence,QShortcut
+from PyQt6.QtGui import QFont, QColor, QKeyEvent, QKeySequence, QShortcut
 from PyQt6.QtCore import Qt
 
 # Assuming this is your custom database manager module
@@ -124,7 +124,7 @@ class BasicWindow(QWidget):
         main_layout.addLayout(create_company_layout)
 
         # Create a table
-        self.company_table = QTableWidget(self)  # Use custom table widget
+        self.company_table = MyTableWidget(self)  # Use custom table widget
         main_layout.addWidget(self.company_table)
 
         # Set stretch factor to make the table columns responsive
@@ -187,20 +187,40 @@ class BasicWindow(QWidget):
 
         if result == QDialog.DialogCode.Accepted:
             # Retrieve values from the form
-            company_name = company_form.company_name_edit.text()
+            company_name = company_form.company_name_edit.text().strip()  # Remove leading/trailing whitespace
             financial_year = company_form.financial_year_combo.currentText()
 
-            # Add the company to the database
-            self.db.insert_company(company_name, financial_year)
+            if company_name:  # Check if company name is not empty
+                # Add the company to the database
+                self.db.insert_company(company_name, financial_year)
 
-            # Refresh the table with updated data
-            self.populate_table()
+                # Refresh the table with updated data
+                self.populate_table()
 
-            QMessageBox.information(self, 'Success', 'Company was created successfully.')
+                QMessageBox.information(self, 'Success', 'Company was created successfully.')
 
-            # Process the form data as needed
-            print(f'Company Name: {company_name}')
-            print(f'Financial Year: {financial_year}')
+                # Process the form data as needed
+                print(f'Company Name: {company_name}')
+                print(f'Financial Year: {financial_year}')
+            else:
+                QMessageBox.warning(self, 'Error', 'Please enter a company name.')
+
+class MyTableWidget(QTableWidget):
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+            selected_row = self.currentRow()
+            if selected_row >= 0:
+                item = self.item(selected_row, 0)
+                company_name = item.text()
+                QMessageBox.information(self, 'Company Name', f'The selected company is: {company_name}')
+        elif event.key() == Qt.Key.Key_Tab:
+            # Move to the next row
+            current_row = self.currentRow()
+            next_row = current_row + 1
+            if next_row < self.rowCount():
+                self.setCurrentCell(next_row, 0)
+        else:
+            super().keyPressEvent(event)
 
 def main():
     app = QApplication(sys.argv)
