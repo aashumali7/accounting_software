@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QFormLayout, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView
 from PyQt6.QtGui import QFont, QColor, QKeyEvent, QKeySequence, QShortcut
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt ,QDate
 
 # Assuming this is your custom database manager module
 from src.lib.database import DatabaseManager
@@ -58,9 +58,22 @@ class CompanyForm(QDialog):
         self.mobile_edit = EnterLineEdit(self)
         self.email_edit = EnterLineEdit(self)
         
-        # Financial Year dropdown
-        self.financial_year_combo = QComboBox(self)
-        self.financial_year_combo.addItems(['2018-2019','2019-2020','2020-2021','2021-2022','2022-2023', '2023-2024', '2024-2025',])  # Add your desired options
+        # Start month dropdown
+        self.start_month_combo = QComboBox(self)
+        self.start_month_combo.addItems(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])
+
+        # End month dropdown
+        self.end_month_combo = QComboBox(self)
+        self.end_month_combo.addItems(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])
+
+        # Start year dropdown
+        self.start_year_combo = QComboBox(self)
+        current_year = QDate.currentDate().year()
+        self.start_year_combo.addItems([str(year) for year in range(current_year, current_year + 11)])
+
+        # End year dropdown
+        self.end_year_combo = QComboBox(self)
+        self.end_year_combo.addItems([str(year) for year in range(current_year, current_year + 11)])
 
         layout.addRow('Company Name:', self.company_name_edit)
         layout.addRow('Address:', self.address_edit)
@@ -68,7 +81,10 @@ class CompanyForm(QDialog):
         layout.addRow('Pin Code:', self.pincode_edit)
         layout.addRow('Mobile:', self.mobile_edit)
         layout.addRow('Email:', self.email_edit)
-        layout.addRow('Financial Year:', self.financial_year_combo)
+        layout.addRow('Start Month:', self.start_month_combo)
+        layout.addRow('Start Year:', self.start_year_combo)
+        layout.addRow('End Month:', self.end_month_combo)
+        layout.addRow('End Year:', self.end_year_combo)
 
         # OK and Cancel buttons
         buttons_layout = QHBoxLayout()
@@ -188,11 +204,14 @@ class BasicWindow(QWidget):
         if result == QDialog.DialogCode.Accepted:
             # Retrieve values from the form
             company_name = company_form.company_name_edit.text().strip()  # Remove leading/trailing whitespace
-            financial_year = company_form.financial_year_combo.currentText()
+            start_month = company_form.start_month_combo.currentText()
+            start_year = company_form.start_year_combo.currentText()
+            end_month = company_form.end_month_combo.currentText()
+            end_year = company_form.end_year_combo.currentText()
 
             if company_name:  # Check if company name is not empty
                 # Add the company to the database
-                self.db.insert_company(company_name, financial_year)
+                self.db.insert_company(company_name, f"{start_month} {start_year}", f"{end_month} {end_year}")
 
                 # Refresh the table with updated data
                 self.populate_table()
@@ -201,9 +220,13 @@ class BasicWindow(QWidget):
 
                 # Process the form data as needed
                 print(f'Company Name: {company_name}')
-                print(f'Financial Year: {financial_year}')
+                print(f'Start Month: {start_month}')
+                print(f'Start Year: {start_year}')
+                print(f'End Month: {end_month}')
+                print(f'End Year: {end_year}')
             else:
                 QMessageBox.warning(self, 'Error', 'Please enter a company name.')
+
 
 class MyTableWidget(QTableWidget):
     def keyPressEvent(self, event):
