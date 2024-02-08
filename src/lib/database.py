@@ -69,21 +69,22 @@ class DatabaseManager:
 
     def select_company(self):
         # Build the query
-        self.cur.execute("SELECT * FROM companies")
+        self.cur.execute("SELECT * FROM companies ORDER BY company_name")
 
         # Execute the query and fetch the result
         result = self.cur.fetchall()
         return result
 
-    def insert_company(self, company_name, financial_year):
+    def insert_company(self, company_name, address, city, pincode, mobile, email, start_month, start_year, end_month, end_year):
         try:
             # Build the query and insert the company data
-            query = "INSERT INTO companies (company_name, financial_year) VALUES (?, ?)"
-            self.cur.execute(query, (company_name, financial_year))
+            query = "INSERT INTO companies (company_name, address, city, pincode, mobile, email, fy_start_month, fy_start_year, fy_end_month, fy_end_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            self.cur.execute(query, (company_name, address, city, pincode, mobile, email, start_month, start_year, end_month, end_year))
             self.conn.commit()
             print("Company added successfully.")
         except Exception as e:
-            print("Error inserting company:", e)
+            print("Error inserting company:", e)    
+
 
     def close(self):
         self.conn.close()
