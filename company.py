@@ -183,9 +183,6 @@ class CompanyForm(QDialog):
         else:
             self.accept()
 
-
-
-
     def update_end_year_options(self):
         start_year_index = self.start_year_combo.currentIndex()
         if start_year_index != -1:
@@ -227,6 +224,7 @@ class BasicWindow(QWidget):
         create_company_button.clicked.connect(self.show_company_form)
         
         create_company_layout.addWidget(create_company_button)
+        
 
         # Add the "Create Company" layout to the main layout
         main_layout.addLayout(create_company_layout)
