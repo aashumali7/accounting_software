@@ -59,6 +59,16 @@ class CompanyForm(QDialog):
         self.mobile_edit = EnterLineEdit(self)
         self.email_edit = EnterLineEdit(self)
         
+        # Country dropdown
+        self.country_combo = QComboBox(self)
+        # Populate country dropdown with sample data (replace with actual country data)
+        self.country_combo.addItems(['India', 'USA', 'Dubai'])
+        # Connect the country dropdown to update the state dropdown
+        self.country_combo.currentIndexChanged.connect(self.update_state_combo)
+
+        # State dropdown
+        self.state_combo = QComboBox(self)
+
         # Start month dropdown
         self.start_month_combo = QComboBox(self)
         self.start_month_combo.addItems(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])
@@ -74,42 +84,48 @@ class CompanyForm(QDialog):
 
         # End year dropdown
         self.end_year_combo = QComboBox(self)
-        self.end_year_combo.setDisabled(True)  # Disable editing
 
-        layout.addWidget(QLabel('Company Name:'))
-        layout.addWidget(self.company_name_edit)
+        # Company details layout
+        company_details_layout = QHBoxLayout()
+        company_details_layout.addWidget(QLabel('Company Name:'))
+        company_details_layout.addWidget(self.company_name_edit)
+        company_details_layout.addWidget(QLabel('Country:'))
+        company_details_layout.addWidget(self.country_combo)
+        company_details_layout.addWidget(QLabel('State:'))
+        company_details_layout.addWidget(self.state_combo)
 
-        layout.addWidget(QLabel('Address:'))
-        layout.addWidget(self.address_edit)
+        # Address layout
+        address_layout = QHBoxLayout()
+        address_layout.addWidget(QLabel('Address:'))
+        address_layout.addWidget(self.address_edit)
 
-        layout.addWidget(QLabel('City:'))
-        layout.addWidget(self.city_edit)
+        # City, Pincode, Mobile, Email layout
+        city_pincode_layout = QHBoxLayout()
+        city_pincode_layout.addWidget(QLabel('City:'))
+        city_pincode_layout.addWidget(self.city_edit)
+        city_pincode_layout.addWidget(QLabel('Pin Code:'))
+        city_pincode_layout.addWidget(self.pincode_edit)
+        city_pincode_layout.addWidget(QLabel('Mobile:'))
+        city_pincode_layout.addWidget(self.mobile_edit)
+        city_pincode_layout.addWidget(QLabel('Email:'))
+        city_pincode_layout.addWidget(self.email_edit)
 
-        layout.addWidget(QLabel('Pin Code:'))
-        layout.addWidget(self.pincode_edit)
+        # Date layout
+        date_layout = QHBoxLayout()
+        date_layout.addWidget(QLabel('Start Year:'))
+        date_layout.addWidget(self.start_year_combo)
+        date_layout.addWidget(QLabel('Start Month:'))
+        date_layout.addWidget(self.start_month_combo)
+        date_layout.addWidget(QLabel('End Year:'))
+        date_layout.addWidget(self.end_year_combo)
+        date_layout.addWidget(QLabel('End Month:'))
+        date_layout.addWidget(self.end_month_combo)
 
-        layout.addWidget(QLabel('Mobile:'))
-        layout.addWidget(self.mobile_edit)
-
-        layout.addWidget(QLabel('Email:'))
-        layout.addWidget(self.email_edit)
-
-        start_date_layout = QHBoxLayout()
-        start_date_layout.addWidget(QLabel('Start Month:'))
-        start_date_layout.addWidget(self.start_month_combo)
-
-        start_date_layout.addWidget(QLabel('Start Year:'))
-        start_date_layout.addWidget(self.start_year_combo)
-
-        end_date_layout = QHBoxLayout()
-        end_date_layout.addWidget(QLabel('End Month:'))
-        end_date_layout.addWidget(self.end_month_combo)
-
-        end_date_layout.addWidget(QLabel('End Year:'))
-        end_date_layout.addWidget(self.end_year_combo)
-
-        layout.addLayout(start_date_layout)
-        layout.addLayout(end_date_layout)
+        # Add layouts to main layout
+        layout.addLayout(company_details_layout)
+        layout.addLayout(address_layout)
+        layout.addLayout(city_pincode_layout)
+        layout.addLayout(date_layout)
 
         # OK and Cancel buttons
         buttons_layout = QHBoxLayout()
@@ -125,18 +141,50 @@ class CompanyForm(QDialog):
         layout.addLayout(buttons_layout)
 
         # Connect Enter key
-        self.company_name_edit.returnPressed.connect(self.address_edit.setFocus)
-        self.address_edit.returnPressed.connect(self.city_edit.setFocus)
-        self.city_edit.returnPressed.connect(self.pincode_edit.setFocus)
-        self.pincode_edit.returnPressed.connect(self.mobile_edit.setFocus)
-        self.mobile_edit.returnPressed.connect(self.email_edit.setFocus)
-        self.email_edit.returnPressed.connect(ok_button.click)
+        self.company_name_edit.returnPressed.connect(self.country_combo.setFocus)  # Set focus to the country dropdown
+        self.country_combo.currentIndexChanged.connect(self.update_state_combo)  # Update state dropdown based on selected country
+        self.state_combo.currentIndexChanged.connect(self.address_edit.setFocus)   # Set focus to the address field
+        self.address_edit.returnPressed.connect(self.city_edit.setFocus)  # Set focus to the city field
+        self.city_edit.returnPressed.connect(self.pincode_edit.setFocus)  # Set focus to the pincode field
+        self.pincode_edit.returnPressed.connect(self.mobile_edit.setFocus)  # Set focus to the mobile field
+        self.mobile_edit.returnPressed.connect(self.email_edit.setFocus)  # Set focus to the email field
+        self.email_edit.returnPressed.connect(self.start_year_combo.setFocus)  # Set focus to the start year combo
 
         # Connect start year combo box signal
         self.start_year_combo.currentIndexChanged.connect(self.update_end_year_options)
 
         # Initially update the end year options
         self.update_end_year_options()
+
+    def update_end_year_options(self):
+        start_year_index = self.start_year_combo.currentIndex()
+        if start_year_index != -1:
+            start_year = int(self.start_year_combo.currentText())
+            self.end_year_combo.clear()
+            self.end_year_combo.addItems([str(year) for year in range(start_year + 1, start_year + 12)])
+
+    def update_state_combo(self, index):
+        # Clear state dropdown
+        self.state_combo.clear()
+        # Get the selected country
+        selected_country = self.country_combo.itemText(index)
+        # Populate state dropdown based on the selected country (replace with actual state data)
+        if selected_country == 'India':
+            self.state_combo.addItems(['MP', 'Gujrat', 'Punjab','Maharashtra'])
+        elif selected_country == 'USA':
+            self.state_combo.addItems(['California', 'Texas', 'Florida',"Alaska"])
+        elif selected_country == 'Dubai':
+            self.state_combo.addItems(['Abu dhabi', 'Sharjah'])
+
+    def check_and_accept(self):
+        if self.company_name_edit.text().strip() == "":
+            QMessageBox.warning(self, 'Warning', 'Please enter the company name.')
+            self.company_name_edit.setFocus()
+        else:
+            self.accept()
+
+
+
 
     def update_end_year_options(self):
         start_year_index = self.start_year_combo.currentIndex()
