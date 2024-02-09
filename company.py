@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt, QDate
 
 # Assuming this is your custom database manager module
 from src.lib.database import DatabaseManager
+from country import countries_and_states
 
 class RoundedButton(QPushButton):
     def __init__(self, text='', parent=None):
@@ -41,18 +42,21 @@ class EnterLineEdit(QLineEdit):
         else:
             super().keyPressEvent(event)
 
+# Define a dictionary containing countries and their states
+
 class CompanyForm(QDialog):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle('Create Company Form')
-        self.setGeometry(100, 100, 1000, 500)
+        self.setGeometry(100, 100, 1100, 500)
 
         layout = QVBoxLayout(self)
         layout.setSpacing(10)  # Set spacing between fields
 
         # Company details fields
         self.company_name_edit = EnterLineEdit(self)
+        self.company_name_edit.setFont(QFont('', 10))  # Set font size for company name input and shorten the length
         self.address_edit = EnterLineEdit(self)
         self.city_edit = EnterLineEdit(self)
         self.pincode_edit = EnterLineEdit(self)
@@ -61,29 +65,37 @@ class CompanyForm(QDialog):
         
         # Country dropdown
         self.country_combo = QComboBox(self)
+        self.country_combo.setFont(QFont('', 15))  # Set font size for country dropdown
         # Populate country dropdown with sample data (replace with actual country data)
-        self.country_combo.addItems(['India', 'USA', 'Dubai'])
+        self.country_combo.addItems(list(countries_and_states.keys()))
         # Connect the country dropdown to update the state dropdown
         self.country_combo.currentIndexChanged.connect(self.update_state_combo)
 
         # State dropdown
         self.state_combo = QComboBox(self)
+        self.state_combo.setFont(QFont('', 15))  # Set font size for state dropdown
+        # Capitalize state names
+        self.state_combo.addItems([state.capitalize() for state in countries_and_states[self.country_combo.currentText()]])
 
         # Start month dropdown
         self.start_month_combo = QComboBox(self)
+        self.start_month_combo.setFont(QFont('', 12))  # Set font size for start month dropdown
         self.start_month_combo.addItems(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])
 
         # End month dropdown
         self.end_month_combo = QComboBox(self)
+        self.end_month_combo.setFont(QFont('', 12))  # Set font size for end month dropdown
         self.end_month_combo.addItems(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])
 
         # Start year dropdown
         self.start_year_combo = QComboBox(self)
+        self.start_year_combo.setFont(QFont('', 12))  # Set font size for start year dropdown
         current_year = QDate.currentDate().year()
         self.start_year_combo.addItems([str(year) for year in range(current_year, current_year + 11)])
 
         # End year dropdown
         self.end_year_combo = QComboBox(self)
+        self.end_year_combo.setFont(QFont('', 12))  # Set font size for end year dropdown
 
         # Company details layout
         company_details_layout = QHBoxLayout()
@@ -168,27 +180,9 @@ class CompanyForm(QDialog):
         self.state_combo.clear()
         # Get the selected country
         selected_country = self.country_combo.itemText(index)
-        # Populate state dropdown based on the selected country (replace with actual state data)
-        if selected_country == 'India':
-            self.state_combo.addItems(['MP', 'Gujrat', 'Punjab','Maharashtra'])
-        elif selected_country == 'USA':
-            self.state_combo.addItems(['California', 'Texas', 'Florida',"Alaska"])
-        elif selected_country == 'Dubai':
-            self.state_combo.addItems(['Abu dhabi', 'Sharjah'])
-
-    def check_and_accept(self):
-        if self.company_name_edit.text().strip() == "":
-            QMessageBox.warning(self, 'Warning', 'Please enter the company name.')
-            self.company_name_edit.setFocus()
-        else:
-            self.accept()
-
-    def update_end_year_options(self):
-        start_year_index = self.start_year_combo.currentIndex()
-        if start_year_index != -1:
-            start_year = int(self.start_year_combo.currentText())
-            self.end_year_combo.clear()
-            self.end_year_combo.addItems([str(year) for year in range(start_year + 1, start_year + 12)])
+        # Populate state dropdown based on the selected country
+        if selected_country in countries_and_states:
+            self.state_combo.addItems([state.capitalize() for state in countries_and_states[selected_country]])
 
     def check_and_accept(self):
         if self.company_name_edit.text().strip() == "":
