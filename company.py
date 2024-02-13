@@ -72,8 +72,6 @@ class CompanyForm(QDialog):
         # State dropdown
         self.state_combo = QComboBox(self)
         self.state_combo.setFont(QFont('', 15))  # Set font size for state dropdown
-        # Capitalize state names
-        self.state_combo.addItems([state.capitalize() for state in countries_and_states[self.country_combo.currentText()]])
 
         # Start month dropdown
         self.start_month_combo = QComboBox(self)
@@ -95,6 +93,11 @@ class CompanyForm(QDialog):
         self.end_year_combo = QComboBox(self)
         self.end_year_combo.setFont(QFont('', 12))  # Set font size for end year dropdown
 
+        # Set default country to India
+        default_country_index = self.country_combo.findText("India")
+        if default_country_index >= 0:
+            self.country_combo.setCurrentIndex(default_country_index)
+
         # Company details layout
         company_details_layout = QHBoxLayout()
         company_details_layout.addWidget(QLabel('Company Name:'))
@@ -113,7 +116,7 @@ class CompanyForm(QDialog):
         city_pincode_layout = QHBoxLayout()
         city_pincode_layout.addWidget(QLabel('City:'))
         city_pincode_layout.addWidget(self.city_edit)
-        city_pincode_layout.addWidget(QLabel('Pin Code:'))
+        city_pincode_layout.addWidget(QLabel('Pin Code/Zip Code:'))
         city_pincode_layout.addWidget(self.pincode_edit)
         city_pincode_layout.addWidget(QLabel('Mobile:'))
         city_pincode_layout.addWidget(self.mobile_edit)
@@ -151,29 +154,15 @@ class CompanyForm(QDialog):
         layout.addLayout(buttons_layout)
 
         # Connect Enter key
-        self.company_name_edit.returnPressed.connect(self.country_combo.setFocus)  # Set focus to the country dropdown
+        self.company_name_edit.returnPressed.connect(lambda: self.country_combo.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the country dropdown
+        self.country_combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # Allow tabbing to country dropdown
         self.country_combo.currentIndexChanged.connect(self.update_state_combo)  # Update state dropdown based on selected country
-        self.state_combo.currentIndexChanged.connect(self.address_edit.setFocus)   # Set focus to the address field
-        self.address_edit.returnPressed.connect(self.city_edit.setFocus)  # Set focus to the city field
-        self.city_edit.returnPressed.connect(self.pincode_edit.setFocus)  # Set focus to the pincode field
-        self.pincode_edit.returnPressed.connect(self.mobile_edit.setFocus)  # Set focus to the mobile field
-        self.mobile_edit.returnPressed.connect(self.email_edit.setFocus)  # Set focus to the email field
-        self.email_edit.returnPressed.connect(self.start_year_combo.setFocus)  # Set focus to the start year combo
-
-        # Connect Tab key
-        self.company_name_edit.setTabOrder(self.company_name_edit, self.country_combo)
-        self.country_combo.setTabOrder(self.country_combo, self.state_combo)
-        self.state_combo.setTabOrder(self.state_combo, self.address_edit)
-        self.address_edit.setTabOrder(self.address_edit, self.city_edit)
-        self.city_edit.setTabOrder(self.city_edit, self.pincode_edit)
-        self.pincode_edit.setTabOrder(self.pincode_edit, self.mobile_edit)
-        self.mobile_edit.setTabOrder(self.mobile_edit, self.email_edit)
-        self.email_edit.setTabOrder(self.email_edit, self.start_year_combo)
-        self.start_year_combo.setTabOrder(self.start_year_combo, self.start_month_combo)
-        self.start_month_combo.setTabOrder(self.start_month_combo, self.end_year_combo)
-        self.end_year_combo.setTabOrder(self.end_year_combo, self.end_month_combo)
-        self.end_month_combo.setTabOrder(self.end_month_combo, ok_button)
-        ok_button.setTabOrder(ok_button, cancel_button)
+        self.state_combo.currentIndexChanged.connect(lambda: self.address_edit.setFocus(Qt.FocusReason.MouseFocusReason))   # Set focus to the address field
+        self.address_edit.returnPressed.connect(lambda: self.city_edit.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the city field
+        self.city_edit.returnPressed.connect(lambda: self.pincode_edit.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the pincode field
+        self.pincode_edit.returnPressed.connect(lambda: self.mobile_edit.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the mobile field
+        self.mobile_edit.returnPressed.connect(lambda: self.email_edit.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the email field
+        self.email_edit.returnPressed.connect(lambda: self.start_year_combo.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the start year combo
 
         # Connect start year combo box signal
         self.start_year_combo.currentIndexChanged.connect(self.update_end_year_options)
@@ -247,7 +236,7 @@ class BasicWindow(QWidget):
         main_layout.addLayout(create_company_layout)
 
         # Create a table
-        self.company_table = QTableWidget(self)
+        self.company_table = MyTableWidget(self)  # Use custom table widget
         main_layout.addWidget(self.company_table)
 
         # Set stretch factor to make the table columns responsive
@@ -330,24 +319,51 @@ class BasicWindow(QWidget):
             pincode = company_form.pincode_edit.text().strip()
             mobile = company_form.mobile_edit.text().strip()
             email = company_form.email_edit.text().strip()
-            country = company_form.country_combo.currentText()
-            state = company_form.state_combo.currentText()
-            start_year = int(company_form.start_year_combo.currentText())
             start_month = company_form.start_month_combo.currentText()
-            end_year = int(company_form.end_year_combo.currentText())
+            start_year = company_form.start_year_combo.currentText()
             end_month = company_form.end_month_combo.currentText()
+            end_year = company_form.end_year_combo.currentText()
 
-            # Save the company to the database
-            db = DatabaseManager()
-            db.insert_company(company_name, address, city, pincode, mobile, email, country, state, start_month, start_year, end_month, end_year)
+            # Add the company to the database
+            self.db.insert_company(company_name, address, city, pincode, mobile, email, start_month, start_year, end_month, end_year)
 
-            # Repopulate the table
+            # Refresh the table with updated data
             self.populate_table()
+
+            QMessageBox.information(self, 'Success', 'Company was created successfully.')
+
+            # Process the form data as needed
+            print(f'Company Name: {company_name}')
+            print(f'Address: {address}')
+            print(f'City: {city}')
+            print(f'Pincode: {pincode}')
+            print(f'Mobile: {mobile}')
+            print(f'Email: {email}')
+            print(f'Start Month: {start_month}')
+            print(f'Start Year: {start_year}')
+            print(f'End Month: {end_month}')
+            print(f'End Year: {end_year}')
+
+class MyTableWidget(QTableWidget):
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return:
+            current_row = self.currentRow()
+            if current_row != -1:  # Ensure a row is selected
+                company_name = self.item(current_row, 0).text()  # Assuming company name is in the first column
+                QMessageBox.information(self, 'Company Name', f'Selected Company: {company_name}')
+        elif event.key() == Qt.Key.Key_Tab:
+            current_row = self.currentRow()
+            next_row = current_row + 1
+            if next_row < self.rowCount():
+                self.setCurrentCell(next_row, 0)
+            else:
+                self.setCurrentCell(0, 0)
+        else:
+            super().keyPressEvent(event)
 
 def main():
     app = QApplication(sys.argv)
-    window = BasicWindow()
-    window.show()
+    basic_window = BasicWindow()
     sys.exit(app.exec())
 
 if __name__ == '__main__':
