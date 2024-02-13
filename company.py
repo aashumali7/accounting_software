@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QFormLayout, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut
 from PyQt6.QtCore import Qt, QDate
 
@@ -41,8 +41,6 @@ class EnterLineEdit(QLineEdit):
             self.focusNextChild()
         else:
             super().keyPressEvent(event)
-
-# Define a dictionary containing countries and their states
 
 class CompanyForm(QDialog):
     def __init__(self):
@@ -162,6 +160,21 @@ class CompanyForm(QDialog):
         self.mobile_edit.returnPressed.connect(self.email_edit.setFocus)  # Set focus to the email field
         self.email_edit.returnPressed.connect(self.start_year_combo.setFocus)  # Set focus to the start year combo
 
+        # Connect Tab key
+        self.company_name_edit.setTabOrder(self.company_name_edit, self.country_combo)
+        self.country_combo.setTabOrder(self.country_combo, self.state_combo)
+        self.state_combo.setTabOrder(self.state_combo, self.address_edit)
+        self.address_edit.setTabOrder(self.address_edit, self.city_edit)
+        self.city_edit.setTabOrder(self.city_edit, self.pincode_edit)
+        self.pincode_edit.setTabOrder(self.pincode_edit, self.mobile_edit)
+        self.mobile_edit.setTabOrder(self.mobile_edit, self.email_edit)
+        self.email_edit.setTabOrder(self.email_edit, self.start_year_combo)
+        self.start_year_combo.setTabOrder(self.start_year_combo, self.start_month_combo)
+        self.start_month_combo.setTabOrder(self.start_month_combo, self.end_year_combo)
+        self.end_year_combo.setTabOrder(self.end_year_combo, self.end_month_combo)
+        self.end_month_combo.setTabOrder(self.end_month_combo, ok_button)
+        ok_button.setTabOrder(ok_button, cancel_button)
+
         # Connect start year combo box signal
         self.start_year_combo.currentIndexChanged.connect(self.update_end_year_options)
 
@@ -185,11 +198,19 @@ class CompanyForm(QDialog):
             self.state_combo.addItems([state.capitalize() for state in countries_and_states[selected_country]])
 
     def check_and_accept(self):
-        if self.company_name_edit.text().strip() == "":
+        company_name = self.company_name_edit.text().strip()
+        if company_name == "":
             QMessageBox.warning(self, 'Warning', 'Please enter the company name.')
             self.company_name_edit.setFocus()
         else:
-            self.accept()
+            # Check if the company name already exists in the database
+            db = DatabaseManager()
+            existing_company = db.select_company_by_name(company_name)
+            if existing_company:
+                QMessageBox.warning(self, 'Warning', 'Company name already exists.')
+            else:
+                # Company name does not exist, accept the form
+                self.accept()
 
 class BasicWindow(QWidget):
     def __init__(self):
@@ -213,18 +234,20 @@ class BasicWindow(QWidget):
         create_company_layout = QVBoxLayout()
 
         # Add the create company button
-        create_company_button = RoundedButton('Create Company', self)
+        create_company_button = QLabel('<html><head/><body><p><span style="color:red; text-decoration: underline;">C</span>reate Company</p></body></html>', self)
+        create_company_button.setFont(QFont('', 18))
+        create_company_button.setStyleSheet("color: black;")
         create_company_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        create_company_button.clicked.connect(self.show_company_form)
-        
+        create_company_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        create_company_button.mousePressEvent = self.show_company_form
+
         create_company_layout.addWidget(create_company_button)
-        
 
         # Add the "Create Company" layout to the main layout
         main_layout.addLayout(create_company_layout)
 
         # Create a table
-        self.company_table = MyTableWidget(self)  # Use custom table widget
+        self.company_table = QTableWidget(self)
         main_layout.addWidget(self.company_table)
 
         # Set stretch factor to make the table columns responsive
@@ -264,10 +287,12 @@ class BasicWindow(QWidget):
 
                 item_company_name = QTableWidgetItem(company_name)
                 item_company_name.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                item_company_name.setFont(QFont('Courier New', 12,QFont.Weight.Bold))
                 item_company_name.setFlags(item_company_name.flags() & ~Qt.ItemFlag.ItemIsEditable)
 
                 item_financial_year = QTableWidgetItem(financial_year)
                 item_financial_year.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                item_financial_year.setFont(QFont('Courier New', 12,QFont.Weight.Bold))
                 item_financial_year.setFlags(item_financial_year.flags() & ~Qt.ItemFlag.ItemIsEditable)
 
                 self.company_table.setItem(row_index, 0, item_company_name)
@@ -278,7 +303,7 @@ class BasicWindow(QWidget):
             for col_index, label in enumerate(header_labels):
                 header_item = QTableWidgetItem(label)
                 header_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                header_item.setFont(QFont('', -1, QFont.Weight.Bold))
+                header_item.setFont(QFont('', 15, QFont.Weight.Bold))
                 self.company_table.setHorizontalHeaderItem(col_index, header_item)
 
             # Set the size of the columns
@@ -293,7 +318,7 @@ class BasicWindow(QWidget):
             self.company_table.setHorizontalHeaderLabels([])
 
 
-    def show_company_form(self):
+    def show_company_form(self, event=None):  # Fix method signature here
         company_form = CompanyForm()
         result = company_form.exec()
 
@@ -305,56 +330,24 @@ class BasicWindow(QWidget):
             pincode = company_form.pincode_edit.text().strip()
             mobile = company_form.mobile_edit.text().strip()
             email = company_form.email_edit.text().strip()
+            country = company_form.country_combo.currentText()
+            state = company_form.state_combo.currentText()
+            start_year = int(company_form.start_year_combo.currentText())
             start_month = company_form.start_month_combo.currentText()
-            start_year = company_form.start_year_combo.currentText()
+            end_year = int(company_form.end_year_combo.currentText())
             end_month = company_form.end_month_combo.currentText()
-            end_year = company_form.end_year_combo.currentText()
 
-            if company_name:  
-                # Add the company to the database
-                self.db.insert_company(company_name, address, city, pincode, mobile, email, start_month, start_year, end_month, end_year)
+            # Save the company to the database
+            db = DatabaseManager()
+            db.insert_company(company_name, address, city, pincode, mobile, email, country, state, start_month, start_year, end_month, end_year)
 
-                # Refresh the table with updated data
-                self.populate_table()
-
-                QMessageBox.information(self, 'Success', 'Company was created successfully.')
-
-                # Process the form data as needed
-                print(f'Company Name: {company_name}')
-                print(f'Address: {address}')
-                print(f'City: {city}')
-                print(f'Pincode: {pincode}')
-                print(f'Mobile: {mobile}')
-                print(f'Email: {email}')
-                print(f'Start Month: {start_month}')
-                print(f'Start Year: {start_year}')
-                print(f'End Month: {end_month}')
-                print(f'End Year: {end_year}')
-            else:
-                # Company name is empty, keep the form open without closing it
-                company_form.show()
-
-class MyTableWidget(QTableWidget):
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return:
-            current_row = self.currentRow()
-            if current_row != -1:  # Ensure a row is selected
-                company_name = self.item(current_row, 0).text()  # Assuming company name is in the first column
-                QMessageBox.information(self, 'Company Name', f'Selected Company: {company_name}')
-        elif event.key() == Qt.Key.Key_Tab:
-            current_row = self.currentRow()
-            next_row = current_row + 1
-            if next_row < self.rowCount():
-                self.setCurrentCell(next_row, 0)
-            else:
-                self.setCurrentCell(0, 0)
-        else:
-            super().keyPressEvent(event)
-
+            # Repopulate the table
+            self.populate_table()
 
 def main():
     app = QApplication(sys.argv)
-    basic_window = BasicWindow()
+    window = BasicWindow()
+    window.show()
     sys.exit(app.exec())
 
 if __name__ == '__main__':

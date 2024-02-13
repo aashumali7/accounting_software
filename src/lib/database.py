@@ -1,5 +1,6 @@
 import sqlite3
 import bcrypt
+from PyQt6.QtWidgets import QMessageBox
 
 class DatabaseManager:
     # Database properties
@@ -74,17 +75,37 @@ class DatabaseManager:
         # Execute the query and fetch the result
         result = self.cur.fetchall()
         return result
+    
+    def select_company_by_name(self, company_name):
+        try:
+            # Build the query to select the company by name
+            query = "SELECT * FROM companies WHERE company_name = ?"
+            self.cur.execute(query, (company_name,))
+            
+            # Fetch the result
+            result = self.cur.fetchone()
+            return result
+        except Exception as e:
+            print("Error selecting company by name:", e)
+            return None
 
     def insert_company(self, company_name, address, city, pincode, mobile, email, start_month, start_year, end_month, end_year):
         try:
+            # Check if the company name already exists
+            existing_company = self.select_company_by_name(company_name)
+            if existing_company:
+                QMessageBox.warning(None, 'Company Exists', 'Company name already exists.')
+                return False
+
             # Build the query and insert the company data
             query = "INSERT INTO companies (company_name, address, city, pincode, mobile, email, fy_start_month, fy_start_year, fy_end_month, fy_end_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             self.cur.execute(query, (company_name, address, city, pincode, mobile, email, start_month, start_year, end_month, end_year))
             self.conn.commit()
             print("Company added successfully.")
+            return True
         except Exception as e:
-            print("Error inserting company:", e)    
-
-
+            print("Error inserting company:", e)
+            return False            
+    
     def close(self):
         self.conn.close()
