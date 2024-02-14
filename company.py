@@ -88,7 +88,6 @@ class CompanyForm(QDialog):
         # End month dropdown
         self.end_month_combo = QComboBox(self)
         self.end_month_combo.setFont(QFont('', 12))  # Set font size for end month dropdown
-        self.end_month_combo.addItems(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])
 
         # Start year dropdown
         self.start_year_combo = QComboBox(self)
@@ -186,12 +185,17 @@ class CompanyForm(QDialog):
         self.state_combo.currentIndexChanged.connect(lambda: self.address_edit.setFocus(Qt.FocusReason.MouseFocusReason))   # Set focus to the address field
         self.address_edit.returnPressed.connect(lambda: self.country_combo.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the country dropdown
 
-
         # Connect start year combo box signal
         self.start_year_combo.currentIndexChanged.connect(self.update_end_year_options)
 
         # Initially update the end year options
         self.update_end_year_options()
+
+        # Connect country combo box signal
+        self.country_combo.currentIndexChanged.connect(self.update_end_month_combo)
+
+        # Initially update the end month options
+        self.update_end_month_combo()
 
     def update_end_year_options(self):
         start_year_index = self.start_year_combo.currentIndex()
@@ -209,6 +213,20 @@ class CompanyForm(QDialog):
         if selected_country in countries_and_states:
             self.state_combo.addItems([state.capitalize() for state in countries_and_states[selected_country]])
 
+    def update_end_month_combo(self):
+        selected_country = self.country_combo.currentText()
+
+        if selected_country == "India":
+            self.start_month_combo.setCurrentIndex(self.start_month_combo.findText("April"))
+
+            self.end_month_combo.clear()
+            self.end_month_combo.addItems(['March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February'])
+        else:
+            self.start_month_combo.setCurrentIndex(self.start_month_combo.findText("January"))
+
+            self.end_month_combo.clear()
+            self.end_month_combo.addItems(['December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November'])
+
     def check_and_accept(self):
         company_name = self.company_name_edit.text().strip()
         if company_name == "":
@@ -219,7 +237,9 @@ class CompanyForm(QDialog):
             db = DatabaseManager()
             existing_company = db.select_company_by_name(company_name)
             if existing_company:
-                QMessageBox.warning(self, 'Warning', 'Company name already exists.')
+                reply = QMessageBox.warning(self, 'Warning', 'Company name already exists.', QMessageBox.StandardButton.Ok)
+                if reply == QMessageBox.StandardButton.Ok:
+                    self.company_name_edit.setFocus()
             else:
                 # Company name does not exist, accept the form
                 self.accept()
