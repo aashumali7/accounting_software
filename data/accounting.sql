@@ -1,15 +1,16 @@
 CREATE TABLE IF NOT EXISTS users (
-    id   INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY,
     username TEXT NOT NULL COLLATE NOCASE,
     password TEXT NOT NULL COLLATE NOCASE,
-    role TEXT CHECK(role IN ('admin', 'accountant', 'operator'))
+    role TEXT CHECK(role IN ('admin', 'accountant', 'operator')),
+    userid INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS companies (
     company_id INTEGER PRIMARY KEY AUTOINCREMENT,
     company_name TEXT NOT NULL COLLATE NOCASE,
     address TEXT NOT NULL COLLATE NOCASE,
     city TEXT NOT NULL COLLATE NOCASE,
-    pincode TEXT NOT NULL,
+    pincode TEXT NOT NULL,`
     mobile TEXT NOT NULL,
     email TEXT NOT NULL,
     fy_start_month TEXT,
