@@ -94,7 +94,13 @@ class CompanyForm(QDialog):
         self.start_year_combo = QComboBox(self)
         self.start_year_combo.setFont(QFont('', 12))  # Set font size for start year dropdown
         current_year = QDate.currentDate().year()
-        self.start_year_combo.addItems([str(year) for year in range(current_year, current_year + 11)])
+        years_list = [str(year) for year in range(2015, current_year + 1)]  # Update the range to include years from 2015 to the current year
+        self.start_year_combo.addItems(years_list)
+
+        # Set the default index to the current year
+        default_year_index = years_list.index(str(current_year))
+        if default_year_index >= 0:
+            self.start_year_combo.setCurrentIndex(default_year_index)
 
         # End year dropdown
         self.end_year_combo = QComboBox(self)
@@ -132,14 +138,14 @@ class CompanyForm(QDialog):
 
         # Date layout
         date_layout = QHBoxLayout()
-        date_layout.addWidget(QLabel('Start Year:'))
-        date_layout.addWidget(self.start_year_combo)
         date_layout.addWidget(QLabel('Start Month:'))
         date_layout.addWidget(self.start_month_combo)
-        date_layout.addWidget(QLabel('End Year:'))
-        date_layout.addWidget(self.end_year_combo)
+        date_layout.addWidget(QLabel('Start Year:'))
+        date_layout.addWidget(self.start_year_combo)
         date_layout.addWidget(QLabel('End Month:'))
         date_layout.addWidget(self.end_month_combo)
+        date_layout.addWidget(QLabel('End Year:'))
+        date_layout.addWidget(self.end_year_combo)
 
         # Add layouts to main layout
         layout.addLayout(company_details_layout)
@@ -160,16 +166,26 @@ class CompanyForm(QDialog):
 
         layout.addLayout(buttons_layout)
 
+        # Set tab order
+        self.setTabOrder(self.company_name_edit, self.country_combo)
+        self.setTabOrder(self.country_combo, self.state_combo)
+        self.setTabOrder(self.state_combo, self.address_edit)
+        self.setTabOrder(self.address_edit, self.city_edit)
+        self.setTabOrder(self.city_edit, self.pincode_edit)
+        self.setTabOrder(self.pincode_edit, self.mobile_edit)
+        self.setTabOrder(self.mobile_edit, self.email_edit)
+        self.setTabOrder(self.email_edit, self.start_year_combo)
+        self.setTabOrder(self.start_year_combo, self.start_month_combo)
+        self.setTabOrder(self.start_month_combo, self.end_year_combo)
+        self.setTabOrder(self.end_year_combo, self.end_month_combo)
+
         # Connect Enter key
         self.company_name_edit.returnPressed.connect(lambda: self.country_combo.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the country dropdown
         self.country_combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # Allow tabbing to country dropdown
         self.country_combo.currentIndexChanged.connect(self.update_state_combo)  # Update state dropdown based on selected country
         self.state_combo.currentIndexChanged.connect(lambda: self.address_edit.setFocus(Qt.FocusReason.MouseFocusReason))   # Set focus to the address field
-        self.address_edit.returnPressed.connect(lambda: self.city_edit.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the city field
-        self.city_edit.returnPressed.connect(lambda: self.pincode_edit.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the pincode field
-        self.pincode_edit.returnPressed.connect(lambda: self.mobile_edit.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the mobile field
-        self.mobile_edit.returnPressed.connect(lambda: self.email_edit.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the email field
-        self.email_edit.returnPressed.connect(lambda: self.start_year_combo.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the start year combo
+        self.address_edit.returnPressed.connect(lambda: self.country_combo.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the country dropdown
+
 
         # Connect start year combo box signal
         self.start_year_combo.currentIndexChanged.connect(self.update_end_year_options)
@@ -353,7 +369,22 @@ class BasicWindow(QWidget):
 
 class MyTableWidget(QTableWidget):
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return:
+        if event.text().isalpha():
+            key = event.text().upper()
+            current_row = self.currentRow()
+            current_col = self.currentColumn()
+            num_rows = self.rowCount()
+            for row in range(current_row + 1, num_rows):
+                item = self.item(row, current_col)
+                if item and item.text().upper().startswith(key):
+                    self.setCurrentCell(row, current_col)
+                    return
+            for row in range(num_rows):
+                item = self.item(row, current_col)
+                if item and item.text().upper().startswith(key):
+                    self.setCurrentCell(row, current_col)
+                    return
+        elif event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return:
             current_row = self.currentRow()
             if current_row != -1:  # Ensure a row is selected
                 company_name = self.item(current_row, 0).text()  # Assuming company name is in the first column
