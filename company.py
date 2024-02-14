@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView
-from PyQt6.QtGui import QFont, QKeySequence, QShortcut
+from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QIntValidator
 from PyQt6.QtCore import Qt, QDate
 
 # Assuming this is your custom database manager module
@@ -57,8 +57,15 @@ class CompanyForm(QDialog):
         self.company_name_edit.setFont(QFont('', 10))  # Set font size for company name input and shorten the length
         self.address_edit = EnterLineEdit(self)
         self.city_edit = EnterLineEdit(self)
+        
+        # Pincode edit field
         self.pincode_edit = EnterLineEdit(self)
+        self.pincode_edit.setValidator(QIntValidator())  # Allow only integer input
+
+        # Mobile edit field
         self.mobile_edit = EnterLineEdit(self)
+        self.mobile_edit.setValidator(QIntValidator())  # Allow only integer input
+
         self.email_edit = EnterLineEdit(self)
         
         # Country dropdown
