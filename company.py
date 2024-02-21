@@ -1,4 +1,5 @@
 import sys
+import pyttsx3
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView, QStackedWidget
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QIntValidator
 from PyQt6.QtCore import Qt, QDate, pyqtSignal
@@ -55,7 +56,7 @@ class CompanyForm(QDialog):
 
         # Company details fields
         self.company_name_edit = EnterLineEdit(self)
-        self.company_name_edit.setFont(QFont('', 10))  # Set font size for company name input and shorten the length
+        self.company_name_edit.setFont(QFont('Comic Sans MS', 12))  # Set font size for company name input and shorten the length
         self.address_edit = EnterLineEdit(self)
         self.city_edit = EnterLineEdit(self)
         
@@ -71,7 +72,7 @@ class CompanyForm(QDialog):
         
         # Country dropdown
         self.country_combo = QComboBox(self)
-        self.country_combo.setFont(QFont('', 15))  # Set font size for country dropdown
+        self.country_combo.setFont(QFont('Comic Sans MS', 14))  # Set font size for country dropdown
         # Populate country dropdown with sample data (replace with actual country data)
         self.country_combo.addItems(list(countries_and_states.keys()))
         # Connect the country dropdown to update the state dropdown
@@ -79,20 +80,20 @@ class CompanyForm(QDialog):
 
         # State dropdown
         self.state_combo = QComboBox(self)
-        self.state_combo.setFont(QFont('', 15))  # Set font size for state dropdown
+        self.state_combo.setFont(QFont('Comic Sans MS', 14))  # Set font size for state dropdown
 
         # Start month dropdown
         self.start_month_combo = QComboBox(self)
-        self.start_month_combo.setFont(QFont('', 12))  # Set font size for start month dropdown
+        self.start_month_combo.setFont(QFont('Verdana', 12))  # Set font size for start month dropdown
         self.start_month_combo.addItems(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'])
 
         # End month dropdown
         self.end_month_combo = QComboBox(self)
-        self.end_month_combo.setFont(QFont('', 12))  # Set font size for end month dropdown
+        self.end_month_combo.setFont(QFont('Verdana', 12))  # Set font size for end month dropdown
 
         # Start year dropdown
         self.start_year_combo = QComboBox(self)
-        self.start_year_combo.setFont(QFont('', 12))  # Set font size for start year dropdown
+        self.start_year_combo.setFont(QFont('Times New Roman', 12))  # Set font size for start year dropdown
         current_year = QDate.currentDate().year()
         years_list = [str(year) for year in range(2015, current_year + 1)]  # Update the range to include years from 2015 to the current year
         self.start_year_combo.addItems(years_list)
@@ -104,7 +105,7 @@ class CompanyForm(QDialog):
 
         # End year dropdown
         self.end_year_combo = QComboBox(self)
-        self.end_year_combo.setFont(QFont('', 12))  # Set font size for end year dropdown
+        self.end_year_combo.setFont(QFont('Times New Roman', 12))  # Set font size for end year dropdown
 
         # Set default country to India
         default_country_index = self.country_combo.findText("India")
@@ -202,7 +203,7 @@ class CompanyForm(QDialog):
         if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
             self.focusNextChild()
         else:
-            super().keyPressEvent(event)    
+            super().keyPressEvent(event) 
 
     def update_end_year_options(self):
         start_year_index = self.start_year_combo.currentIndex()
@@ -248,19 +249,37 @@ class CompanyForm(QDialog):
     def check_and_accept(self):
         company_name = self.company_name_edit.text().strip()
         if company_name == "":
-            QMessageBox.warning(self, 'Warning', 'Please enter the company name.')
+            self.speak_warning('Please enter the company name.')
             self.company_name_edit.setFocus()
         else:
             # Check if the company name already exists in the database
             db = DatabaseManager()
             existing_company = db.select_company_by_name(company_name)
             if existing_company:
+                self.speak_warning('Company name already exists.', 'Warning')
                 reply = QMessageBox.warning(self, 'Warning', 'Company name already exists.', QMessageBox.StandardButton.Ok)
                 if reply == QMessageBox.StandardButton.Ok:
                     self.company_name_edit.setFocus()
             else:
                 # Company name does not exist, accept the form
                 self.accept()
+
+    def speak_warning(self, message, title='Warning'):
+        QMessageBox.warning(self, title, message)
+        
+        # Initialize the text-to-speech engine
+        engine = pyttsx3.init()
+        
+        # Set properties for the voice (you can adjust these values as needed)
+        engine.setProperty('rate', 200)  # Speed of speech
+        engine.setProperty('volume', 1.0)  # Volume (0.0 to 1.0)
+        voices = engine.getProperty('voices')  # Get list of available voices
+        # Select a male voice (you can change the index to choose a different voice)
+        engine.setProperty('voice', voices[0].id)  # Index 0 usually represents a male voice
+        
+        # Speak the message
+        engine.say(message)
+        engine.runAndWait()   
 
 class MyTableWidget(QTableWidget):
     registrationFormOpened = pyqtSignal(bool)
@@ -352,7 +371,7 @@ class BasicWindow(QWidget):
 
     def init_ui(self):
         # Set up the main window
-        self.setWindowTitle('Basic PyQt6 Window')
+        self.setWindowTitle('Accounting Software')
         self.showMaximized()
 
         # Create a layout for the entire window
@@ -363,7 +382,7 @@ class BasicWindow(QWidget):
 
         # Add the create company button
         self.create_company_button = QLabel('<html><head/><body><p><span style="color:red; text-decoration: underline;">C</span>reate Company</p></body></html>', self)
-        self.create_company_button.setFont(QFont('', 18))
+        self.create_company_button.setFont(QFont('Comic Sans MS', 18))
         self.create_company_button.setStyleSheet("color: black;")
         self.create_company_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.create_company_button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -425,12 +444,12 @@ class BasicWindow(QWidget):
 
                 item_company_name = QTableWidgetItem(company_name)
                 item_company_name.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                item_company_name.setFont(QFont('Courier New', 12,QFont.Weight.Bold))
+                item_company_name.setFont(QFont('Comic Sans MS', 12,QFont.Weight.Bold))
                 item_company_name.setFlags(item_company_name.flags() & ~Qt.ItemFlag.ItemIsEditable)
 
                 item_financial_year = QTableWidgetItem(financial_year)
                 item_financial_year.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                item_financial_year.setFont(QFont('Courier New', 12,QFont.Weight.Bold))
+                item_financial_year.setFont(QFont('Comic Sans MS', 12,QFont.Weight.Bold))
                 item_financial_year.setFlags(item_financial_year.flags() & ~Qt.ItemFlag.ItemIsEditable)
 
                 self.company_table.setItem(row_index, 0, item_company_name)
@@ -480,18 +499,6 @@ class BasicWindow(QWidget):
             self.populate_table()
 
             QMessageBox.information(self, 'Success', 'Company was created successfully.')
-
-            # Process the form data as needed
-            print(f'Company Name: {company_name}')
-            print(f'Address: {address}')
-            print(f'City: {city}')
-            print(f'Pincode: {pincode}')
-            print(f'Mobile: {mobile}')
-            print(f'Email: {email}')
-            print(f'Start Month: {start_month}')
-            print(f'Start Year: {start_year}')
-            print(f'End Month: {end_month}')
-            print(f'End Year: {end_year}')
 
 def main():
     app = QApplication(sys.argv)
