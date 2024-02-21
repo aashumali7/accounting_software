@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QGroupBox, QStackedWidget,QMessageBox
-from lib.database import DatabaseManager  # Import your DatabaseManager class
+from src.lib.database import DatabaseManager  # Import your DatabaseManager class
 
 class RegistrationForm(QWidget):
     def __init__(self, stack_widget, db):
@@ -11,6 +11,13 @@ class RegistrationForm(QWidget):
         self.db = db
 
         self.init_ui()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            # Jump back to the company page
+            self.stack_widget.setCurrentIndex(0)  # Assuming index 0 is your company page
+        else:
+            super().keyPressEvent(event)    
 
     def init_ui(self):
         layout = QFormLayout()

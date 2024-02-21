@@ -1,10 +1,11 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView, QStackedWidget
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QIntValidator
-from PyQt6.QtCore import Qt, QDate
+from PyQt6.QtCore import Qt, QDate, pyqtSignal
 
 # Assuming this is your custom database manager module
 from src.lib.database import DatabaseManager
+from src.app.gui.pages.register.register import RegistrationForm
 from country import countries_and_states
 
 class RoundedButton(QPushButton):
@@ -197,6 +198,12 @@ class CompanyForm(QDialog):
         # Initially update the end month options
         self.update_end_month_combo()
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+            self.focusNextChild()
+        else:
+            super().keyPressEvent(event)    
+
     def update_end_year_options(self):
         start_year_index = self.start_year_combo.currentIndex()
         if start_year_index != -1:
@@ -205,27 +212,38 @@ class CompanyForm(QDialog):
             self.end_year_combo.addItems([str(year) for year in range(start_year + 1, start_year + 12)])
 
     def update_state_combo(self, index):
-        # Clear state dropdown
-        self.state_combo.clear()
-        # Get the selected country
-        selected_country = self.country_combo.itemText(index)
-        # Populate state dropdown based on the selected country
+        selected_country = self.country_combo.currentText()
         if selected_country in countries_and_states:
-            self.state_combo.addItems([state.capitalize() for state in countries_and_states[selected_country]])
+            # Update state dropdown based on selected country
+            self.state_combo.clear()
+            self.state_combo.addItems([state.capitalize() for state in countries_and_states[selected_country]["states"]])
+            
+            # Update start and end months based on selected country's fiscal year
+            fyear = countries_and_states[selected_country]["fyear"]
+            self.start_month_combo.setCurrentIndex(self.start_month_combo.findText(fyear["start"]))
+            self.end_month_combo.setCurrentIndex(self.end_month_combo.findText(fyear["end"]))
 
     def update_end_month_combo(self):
         selected_country = self.country_combo.currentText()
 
-        if selected_country == "India":
-            self.start_month_combo.setCurrentIndex(self.start_month_combo.findText("April"))
+        # Clear existing items in the end month combo box
+        self.end_month_combo.clear()
 
-            self.end_month_combo.clear()
-            self.end_month_combo.addItems(['March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February'])
-        else:
-            self.start_month_combo.setCurrentIndex(self.start_month_combo.findText("January"))
+        if selected_country in countries_and_states:
+            fyear = countries_and_states[selected_country]["fyear"]
+            start_month = fyear["start"]
+            end_month = fyear["end"]
 
-            self.end_month_combo.clear()
-            self.end_month_combo.addItems(['December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November'])
+            # Set the start month combo box to the start month of the fiscal year
+            self.start_month_combo.setCurrentIndex(self.start_month_combo.findText(start_month))
+
+            # Add end months based on the fiscal year
+            months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+            start_index = months.index(end_month)
+            self.end_month_combo.addItems(months[start_index:] + months[:start_index])
+
+            # Set the default end month to the first item in the combo box
+            self.end_month_combo.setCurrentIndex(0)
 
     def check_and_accept(self):
         company_name = self.company_name_edit.text().strip()
@@ -244,16 +262,94 @@ class CompanyForm(QDialog):
                 # Company name does not exist, accept the form
                 self.accept()
 
+class MyTableWidget(QTableWidget):
+    registrationFormOpened = pyqtSignal(bool)
+
+    def __init__(self, stack_widget, db, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stack_widget = stack_widget
+        self.db = db
+
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.doubleClicked.connect(self.open_registration_form)  # Connect double click event to open the registration form
+
+    def open_registration_form(self):
+        current_row = self.currentRow()
+        if current_row != -1:  # Ensure a row is selected
+            # Emit signal to notify the form opening
+            self.registrationFormOpened.emit(True)
+
+            # Show the registration form
+            registration_form = RegistrationForm(self.stack_widget, self.db)
+            self.stack_widget.addWidget(registration_form)
+            self.stack_widget.setCurrentWidget(registration_form)
+
+
+    def keyPressEvent(self, event):
+        if event.text().isalpha():
+            key = event.text().upper()
+            current_row = self.currentRow()
+            current_col = self.currentColumn()
+            num_rows = self.rowCount()
+            for row in range(current_row + 1, num_rows):
+                item = self.item(row, current_col)
+                if item and item.text().upper().startswith(key):
+                    self.setCurrentCell(row, current_col)
+                    return
+            for row in range(num_rows):
+                item = self.item(row, current_col)
+                if item and item.text().upper().startswith(key):
+                    self.setCurrentCell(row, current_col)
+                    return
+        elif event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return:
+            current_row = self.currentRow()
+            if current_row != -1:  # Ensure a row is selected
+                company_name = self.item(current_row, 0).text()  # Assuming company name is in the first column
+                self.open_registration_form(company_name)  # Call the method to open the register page
+        elif event.key() == Qt.Key.Key_Tab:
+            current_row = self.currentRow()
+            next_row = current_row + 1
+            if next_row < self.rowCount():
+                self.setCurrentCell(next_row, 0)
+            else:
+                self.setCurrentCell(0, 0)
+        else:
+            super().keyPressEvent(event)
+
+    def open_registration_form(self, company_name):
+        # Emit signal to notify the form opening
+        self.registrationFormOpened.emit(True)
+
+        # Show the registration form
+        registration_form = RegistrationForm(self.stack_widget, self.db)
+        self.stack_widget.addWidget(registration_form)
+        self.stack_widget.setCurrentWidget(registration_form)
+
 class BasicWindow(QWidget):
     def __init__(self):
         super().__init__()
-        # Create a shortcut for Alt+C
-        shortcut = QShortcut(QKeySequence("Alt+C"), self)
-        shortcut.activated.connect(self.show_company_form)
-
+        # Create a stack widget to manage multiple pages
+        self.stack_widget = QStackedWidget()  # Initialize the stack widget
         self.db = DatabaseManager()
         self.init_ui()
+        self.create_shortcuts()
         
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            reply = QMessageBox.question(self, 'Close Application', 'Do you want to close the application?',
+                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            if reply == QMessageBox.StandardButton.Yes:
+                QApplication.quit()
+            elif reply == QMessageBox.StandardButton.No:
+                pass
+        elif event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+            self.focusNextChild()
+        else:
+            super().keyPressEvent(event)
+
+        # Ensure the "Create Company" button remains visible
+        self.create_company_button.setVisible(True)  # Replace 'create_company_button' with the actual name of your button
+
     def init_ui(self):
         # Set up the main window
         self.setWindowTitle('Basic PyQt6 Window')
@@ -266,34 +362,44 @@ class BasicWindow(QWidget):
         create_company_layout = QVBoxLayout()
 
         # Add the create company button
-        create_company_button = QLabel('<html><head/><body><p><span style="color:red; text-decoration: underline;">C</span>reate Company</p></body></html>', self)
-        create_company_button.setFont(QFont('', 18))
-        create_company_button.setStyleSheet("color: black;")
-        create_company_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        create_company_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        create_company_button.mousePressEvent = self.show_company_form
+        self.create_company_button = QLabel('<html><head/><body><p><span style="color:red; text-decoration: underline;">C</span>reate Company</p></body></html>', self)
+        self.create_company_button.setFont(QFont('', 18))
+        self.create_company_button.setStyleSheet("color: black;")
+        self.create_company_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.create_company_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.create_company_button.mousePressEvent = self.show_company_form
 
-        create_company_layout.addWidget(create_company_button)
+        create_company_layout.addWidget(self.create_company_button)
 
         # Add the "Create Company" layout to the main layout
         main_layout.addLayout(create_company_layout)
 
-        # Create a table
-        self.company_table = MyTableWidget(self)  # Use custom table widget
-        main_layout.addWidget(self.company_table)
-
-        # Set stretch factor to make the table columns responsive
-        header = self.company_table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-
-        # Set selection behavior to select entire rows
-        self.company_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-
-        # Fill the table with data
-        self.populate_table()
+        # Add the stack widget to the main layout
+        main_layout.addWidget(self.stack_widget)
 
         # Set the layout for the main window
         self.setLayout(main_layout)
+
+        # Initialize the table widget
+        self.init_table_widget()
+
+    def create_shortcuts(self):
+        # Create shortcut to open create company form
+        create_company_shortcut = QShortcut(QKeySequence("Alt+C"), self)
+        create_company_shortcut.activated.connect(self.show_company_form)
+
+    def init_table_widget(self):
+        # Create the table widget
+        self.company_table = MyTableWidget(self.stack_widget, self.db)
+        self.company_table.registrationFormOpened.connect(self.hide_create_company_button)
+        self.populate_table()
+
+        # Add the table widget to the stack widget
+        self.stack_widget.addWidget(self.company_table)
+
+    def hide_create_company_button(self, opened):
+        if opened:
+            self.create_company_button.hide()
 
     def populate_table(self):
         # Fetch data from the database
@@ -386,38 +492,6 @@ class BasicWindow(QWidget):
             print(f'Start Year: {start_year}')
             print(f'End Month: {end_month}')
             print(f'End Year: {end_year}')
-
-class MyTableWidget(QTableWidget):
-    def keyPressEvent(self, event):
-        if event.text().isalpha():
-            key = event.text().upper()
-            current_row = self.currentRow()
-            current_col = self.currentColumn()
-            num_rows = self.rowCount()
-            for row in range(current_row + 1, num_rows):
-                item = self.item(row, current_col)
-                if item and item.text().upper().startswith(key):
-                    self.setCurrentCell(row, current_col)
-                    return
-            for row in range(num_rows):
-                item = self.item(row, current_col)
-                if item and item.text().upper().startswith(key):
-                    self.setCurrentCell(row, current_col)
-                    return
-        elif event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return:
-            current_row = self.currentRow()
-            if current_row != -1:  # Ensure a row is selected
-                company_name = self.item(current_row, 0).text()  # Assuming company name is in the first column
-                QMessageBox.information(self, 'Company Name', f'Selected Company: {company_name}')
-        elif event.key() == Qt.Key.Key_Tab:
-            current_row = self.currentRow()
-            next_row = current_row + 1
-            if next_row < self.rowCount():
-                self.setCurrentCell(next_row, 0)
-            else:
-                self.setCurrentCell(0, 0)
-        else:
-            super().keyPressEvent(event)
 
 def main():
     app = QApplication(sys.argv)

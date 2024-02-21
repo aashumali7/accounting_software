@@ -3,10 +3,10 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout, QSt
 from PyQt6.QtGui import QIcon
 
 
-from app.gui.pages.login.login import LoginForm
-from app.gui.pages.register.register import RegistrationForm
-from app.gui.pages.dashboard.dashboard import DashboardPage
-from lib.database import DatabaseManager
+from src.app.gui.pages.login.login import LoginForm
+from src.app.gui.pages.register.register import RegistrationForm
+from src.app.gui.pages.dashboard.dashboard import DashboardPage
+from src.lib.database import DatabaseManager
 
 class MainWindow(QMainWindow):
     def __init__(self):
