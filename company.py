@@ -3,6 +3,8 @@ import pyttsx3
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView, QStackedWidget
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QIntValidator
 from PyQt6.QtCore import Qt, QDate, pyqtSignal
+import threading
+
 
 # Assuming this is your custom database manager module
 from src.lib.database import DatabaseManager
@@ -249,14 +251,14 @@ class CompanyForm(QDialog):
     def check_and_accept(self):
         company_name = self.company_name_edit.text().strip()
         if company_name == "":
-            self.speak_warning('Please enter the company name.')
+            self.show_warning('Please enter the company name.')
             self.company_name_edit.setFocus()
         else:
             # Check if the company name already exists in the database
             db = DatabaseManager()
             existing_company = db.select_company_by_name(company_name)
             if existing_company:
-                self.speak_warning('Company name already exists.', 'Warning')
+                self.show_warning('Company name already exists.', 'Warning')
                 reply = QMessageBox.warning(self, 'Warning', 'Company name already exists.', QMessageBox.StandardButton.Ok)
                 if reply == QMessageBox.StandardButton.Ok:
                     self.company_name_edit.setFocus()
@@ -264,22 +266,8 @@ class CompanyForm(QDialog):
                 # Company name does not exist, accept the form
                 self.accept()
 
-    def speak_warning(self, message, title='Warning'):
-        QMessageBox.warning(self, title, message)
-        
-        # Initialize the text-to-speech engine
-        engine = pyttsx3.init()
-        
-        # Set properties for the voice (you can adjust these values as needed)
-        engine.setProperty('rate', 200)  # Speed of speech
-        engine.setProperty('volume', 1.0)  # Volume (0.0 to 1.0)
-        voices = engine.getProperty('voices')  # Get list of available voices
-        # Select a male voice (you can change the index to choose a different voice)
-        engine.setProperty('voice', voices[0].id)  # Index 0 usually represents a male voice
-        
-        # Speak the message
-        engine.say(message)
-        engine.runAndWait()   
+    def show_warning(self, message, title='Warning'):
+        QMessageBox.warning(self, title, message)   
 
 class MyTableWidget(QTableWidget):
     registrationFormOpened = pyqtSignal(bool)
@@ -344,6 +332,11 @@ class MyTableWidget(QTableWidget):
         self.stack_widget.addWidget(registration_form)
         self.stack_widget.setCurrentWidget(registration_form)
 
+class PermanentRegisterForm(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.init_ui()        
+
 class BasicWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -352,6 +345,9 @@ class BasicWindow(QWidget):
         self.db = DatabaseManager()
         self.init_ui()
         self.create_shortcuts()
+
+        # Connect signal of stack widget's current changed to a slot
+        self.stack_widget.currentChanged.connect(self.handle_page_change)
         
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
@@ -365,9 +361,6 @@ class BasicWindow(QWidget):
             self.focusNextChild()
         else:
             super().keyPressEvent(event)
-
-        # Ensure the "Create Company" button remains visible
-        self.create_company_button.setVisible(True)  # Replace 'create_company_button' with the actual name of your button
 
     def init_ui(self):
         # Set up the main window
@@ -401,6 +394,15 @@ class BasicWindow(QWidget):
 
         # Initialize the table widget
         self.init_table_widget()
+
+    def handle_page_change(self, index):
+        # Get the current widget from the stack widget
+        current_widget = self.stack_widget.widget(index)
+        # Check if the current widget is the register page
+        if isinstance(current_widget, RegistrationForm):
+            self.create_company_button.setVisible(False)
+        else:
+            self.create_company_button.setVisible(True)
 
     def create_shortcuts(self):
         # Create shortcut to open create company form

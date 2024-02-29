@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL COLLATE NOCASE,
     password TEXT NOT NULL COLLATE NOCASE,
     role TEXT CHECK(role IN ('admin', 'accountant', 'operator')),
-    userid INTEGER NOT NULL
+    compid INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS companies (
     company_id INTEGER PRIMARY KEY AUTOINCREMENT,
