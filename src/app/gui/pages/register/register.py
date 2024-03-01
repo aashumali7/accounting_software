@@ -70,28 +70,3 @@ class RegistrationForm(QWidget):
                 print("Registration failed. Username might already exist.")
         else:
             print("Invalid username or passwords do not match!")
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-
-    db = DatabaseManager()  # Create an instance of your DatabaseManager class
-
-    # Assuming you have a QStackedWidget managing multiple pages
-    stacked_widget = QStackedWidget()
-    login_page = LoginForm(stacked_widget, db)
-    registration_page = RegistrationForm(stacked_widget, db)
-    # Add more pages to the stacked widget if needed
-
-    stacked_widget.addWidget(login_page)
-    stacked_widget.addWidget(registration_page)
-    # Add more pages to the stacked widget if needed
-
-    main_window = QWidget()
-    main_layout = QVBoxLayout(main_window)
-    main_layout.addWidget(stacked_widget)
-
-    main_window.setWindowTitle("Registration ")
-    main_window.setGeometry(100, 100, 1200, 800)
-    main_window.show()
-
-    sys.exit(app.exec())
