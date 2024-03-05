@@ -1,7 +1,7 @@
-import sys
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QGroupBox, QStackedWidget, QMessageBox
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QGroupBox, QStackedWidget,QMessageBox
 from src.lib.database import DatabaseManager  # Import your DatabaseManager class
+#from src.app.gui.pages.login.login import LoginForm  # Import your LoginForm class
 
 class RegistrationForm(QWidget):
     def __init__(self, stack_widget, db):
@@ -56,17 +56,25 @@ class RegistrationForm(QWidget):
     def on_register_clicked(self):
         username = self.username_input.text()
         password = self.password_input.text()
+        role = 'admin'  # or whatever default role you want to assign
+        compid = 1  # Assuming compid 1 for now, you might need to fetch it from your UI
 
         # Check if passwords match and username is not empty
         if password == self.confirm_password_input.text() and username:
-            # Perform registration in the database
-            if self.db.register_user(username, password):
-                print("Registration successful!")
-
-                 # Show a success popup
-                QMessageBox.information(None, "Registration Success", "User registered successfully!")
-                self.stack_widget.setCurrentIndex(0)  # Switch to Login Page
+            # Check if user is already registered in the company
+            if self.db.check_user_in_company(username, compid):
+                QMessageBox.warning(None, "Registration Failed", "User is already registered in the company.")
             else:
-                print("Registration failed. Username might already exist.")
+                # Perform registration in the database
+                if self.db.register_user(username, password, role, compid):
+                    print("Registration successful!")
+                    # Show a success popup
+                    QMessageBox.information(None, "Registration Success", "User registered successfully!")
+                    # Switch to the login page after registration
+                    login_form = LoginForm(self.stack_widget, self.db)
+                    self.stack_widget.addWidget(login_form)
+                    self.stack_widget.setCurrentWidget(login_form)
+                else:
+                    print("Registration failed. Username might already exist.")
         else:
             print("Invalid username or passwords do not match!")

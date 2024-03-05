@@ -1,7 +1,7 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QGroupBox, QStackedWidget, QMessageBox
-from lib.database import DatabaseManager
-from app.gui.pages.dashboard.dashboard import DashboardPage  # Import your DashboardPage class
+from src.lib.database import DatabaseManager
+from src.app.gui.pages.dashboard.dashboard import DashboardPage  # Import your DashboardPage class
 
 
 class LoginForm(QWidget):

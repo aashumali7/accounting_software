@@ -2,7 +2,7 @@ import sys
 import pyttsx3
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView, QStackedWidget
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QIntValidator
-from PyQt6.QtCore import Qt, QDate, pyqtSignal
+from PyQt6.QtCore import Qt, QDate, pyqtSignal,QTimer
 import threading
 
 
@@ -345,6 +345,7 @@ class BasicWindow(QWidget):
         self.db = DatabaseManager()
         self.init_ui()
         self.create_shortcuts()
+        self.refresh_label = None  # Initialize refresh label as None
 
         # Connect signal of stack widget's current changed to a slot
         self.stack_widget.currentChanged.connect(self.handle_page_change)
@@ -359,8 +360,27 @@ class BasicWindow(QWidget):
                 pass
         elif event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
             self.focusNextChild()
+        elif event.key() == Qt.Key.Key_F5:
+            # Handle F5 key press to refresh the table
+            self.populate_table()  # Call the method to populate the table
+            self.show_refresh_indicator()  # Show the refresh indicator
         else:
             super().keyPressEvent(event)
+
+    def show_refresh_indicator(self):
+        # Create a QLabel for refresh indicator
+        if not self.refresh_label:
+            self.refresh_label = QLabel('Refreshing...', self)
+            self.refresh_label.setStyleSheet('background-color: #ffff00; color: #000000; font-weight: bold; padding: 5px;')
+            self.layout().addWidget(self.refresh_label)
+            QTimer.singleShot(2000, self.hide_refresh_indicator)  # Hide the indicator after 2 seconds
+
+    def hide_refresh_indicator(self):
+        # Remove the refresh indicator label
+        if self.refresh_label:
+            self.layout().removeWidget(self.refresh_label)
+            self.refresh_label.deleteLater()
+            self.refresh_label = None
 
     def init_ui(self):
         # Set up the main window

@@ -47,16 +47,38 @@ class DatabaseManager:
         finally:
             pass
 
-    def register_user(self, username, password):
+    def register_user(self, username, password, role, compid):
         try:
             # Hash the password before inserting into the database
             hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-            self.cur.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (username, hashed_password, 'admin'))
+            self.cur.execute("INSERT INTO users (username, password, role, compid) VALUES (?, ?, ?, ?)", (username, hashed_password, role, compid))
             self.conn.commit()
             return True
-        except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError as e:
             # Unique constraint violated, username already exists
+            print("Error registering user:", e)
             return False
+
+    def check_user_in_company(self, username, compid):
+        try:
+            self.cur.execute("SELECT COUNT(*) FROM users WHERE username=? AND compid=?", (username, compid))
+            result = self.cur.fetchone()
+            return result[0] > 0
+        except Exception as e:
+            print("Error checking user in company:", e)
+            return False
+        
+    def check_user_exists(self, username):
+        try:
+            # Execute a query to count the number of users with the provided username
+            self.cur.execute("SELECT COUNT(*) FROM users WHERE username=?", (username,))
+            result = self.cur.fetchone()
+
+            # If the count is greater than 0, the user exists
+            return result[0] > 0
+        except Exception as e:
+            print("Error checking if user exists:", e)
+            return False    
 
     def login_user(self, username, password):
         self.cur.execute("SELECT id, username FROM users WHERE username=?", (username,))
