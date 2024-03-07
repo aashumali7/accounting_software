@@ -1,9 +1,7 @@
 import sys
-import pyttsx3
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QSizePolicy, QDialog, QLineEdit, QComboBox, QLabel, QMessageBox, QAbstractItemView, QHeaderView, QStackedWidget
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut, QIntValidator
-from PyQt6.QtCore import Qt, QDate, pyqtSignal,QTimer
-import threading
+from PyQt6.QtCore import Qt, QDate, pyqtSignal,QTimer,QEvent
 
 
 # Assuming this is your custom database manager module
@@ -45,7 +43,7 @@ class EnterLineEdit(QLineEdit):
             self.focusNextChild()
         else:
             super().keyPressEvent(event)
-
+ 
 class CompanyForm(QDialog):
     def __init__(self):
         super().__init__()
@@ -177,16 +175,15 @@ class CompanyForm(QDialog):
         self.setTabOrder(self.city_edit, self.pincode_edit)
         self.setTabOrder(self.pincode_edit, self.mobile_edit)
         self.setTabOrder(self.mobile_edit, self.email_edit)
-        self.setTabOrder(self.email_edit, self.start_year_combo)
-        self.setTabOrder(self.start_year_combo, self.start_month_combo)
-        self.setTabOrder(self.start_month_combo, self.end_year_combo)
-        self.setTabOrder(self.end_year_combo, self.end_month_combo)
+        self.setTabOrder(self.email_edit, self.start_month_combo)  # Adjusted tab order
+        self.setTabOrder(self.start_month_combo, self.start_year_combo)  # Adjusted tab order
+        self.setTabOrder(self.start_year_combo, self.end_month_combo)  # Adjusted tab order
+        self.setTabOrder(self.end_month_combo, self.end_year_combo)  # Adjusted tab order
 
         # Connect Enter key
         self.company_name_edit.returnPressed.connect(lambda: self.country_combo.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the country dropdown
-        self.country_combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # Allow tabbing to country dropdown
-        self.country_combo.currentIndexChanged.connect(self.update_state_combo)  # Update state dropdown based on selected country
-        self.state_combo.currentIndexChanged.connect(lambda: self.address_edit.setFocus(Qt.FocusReason.MouseFocusReason))   # Set focus to the address field
+        self.country_combo.currentIndexChanged.connect(self.country_combo_handle_change)  # Handle change in country dropdown
+        self.state_combo.currentIndexChanged.connect(self.state_combo_handle_change)  # Handle change in state dropdown
         self.address_edit.returnPressed.connect(lambda: self.country_combo.setFocus(Qt.FocusReason.MouseFocusReason))  # Set focus to the country dropdown
 
         # Connect start year combo box signal
@@ -200,12 +197,90 @@ class CompanyForm(QDialog):
 
         # Initially update the end month options
         self.update_end_month_combo()
+        
+        self.country_combo.installEventFilter(self)
+        self.state_combo.installEventFilter(self)
+        self.address_edit.installEventFilter(self)
+        self.city_edit.installEventFilter(self)
+        self.pincode_edit.installEventFilter(self)
+        self.mobile_edit.installEventFilter(self)
+        self.email_edit.installEventFilter(self)
+        self.start_month_combo.installEventFilter(self)
+        self.start_year_combo.installEventFilter(self)
+        self.end_month_combo.installEventFilter(self)
+        self.end_year_combo.installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Type.KeyPress:
+            if obj == self.country_combo and event.key() == Qt.Key.Key_Down:
+                self.country_combo.showPopup()
+                return True
+            elif obj == self.state_combo and event.key() == Qt.Key.Key_Down:
+                self.state_combo.showPopup()
+                return True
+        return super().eventFilter(obj, event)
+
+    def country_combo_handle_change(self, index):
+        self.state_combo.setFocus(Qt.FocusReason.MouseFocusReason)
+
+    def state_combo_handle_change(self, index):
+        self.address_edit.setFocus(Qt.FocusReason.MouseFocusReason)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
-            self.focusNextChild()
+        if event.key() == Qt.Key.Key_Escape:
+            self.reject()
+        if event.key() == Qt.Key.Key_Down:
+            if self.company_name_edit.hasFocus():
+                self.country_combo.setFocus()
+            elif self.country_combo.hasFocus():
+                self.state_combo.setFocus()
+            elif self.state_combo.hasFocus():
+                self.address_edit.setFocus()
+            elif self.address_edit.hasFocus():
+                self.city_edit.setFocus()
+            elif self.city_edit.hasFocus():
+                self.pincode_edit.setFocus()
+            elif self.pincode_edit.hasFocus():
+                self.mobile_edit.setFocus()
+            elif self.mobile_edit.hasFocus():
+                self.email_edit.setFocus()
+            elif self.email_edit.hasFocus():
+                self.start_month_combo.setFocus()
+            elif self.start_month_combo.hasFocus():
+                self.start_year_combo.setFocus()
+            elif self.start_year_combo.hasFocus():
+                self.end_month_combo.setFocus()
+            elif self.end_month_combo.hasFocus():
+                self.end_year_combo.setFocus()
+            event.accept()
+        elif event.key() == Qt.Key.Key_Return:
+            if self.company_name_edit.hasFocus():
+                self.country_combo.setFocus()
+            elif self.country_combo.hasFocus():
+                self.state_combo.setFocus()
+            elif self.state_combo.hasFocus():
+                self.address_edit.setFocus()
+            elif self.address_edit.hasFocus():
+                self.city_edit.setFocus()
+            elif self.city_edit.hasFocus():
+                self.pincode_edit.setFocus()
+            elif self.pincode_edit.hasFocus():
+                self.mobile_edit.setFocus()
+            elif self.mobile_edit.hasFocus():
+                self.email_edit.setFocus()
+            elif self.email_edit.hasFocus():
+                self.start_month_combo.setFocus()
+            elif self.start_month_combo.hasFocus():
+                self.start_year_combo.setFocus()
+            elif self.start_year_combo.hasFocus():
+                self.end_month_combo.setFocus()
+            elif self.end_month_combo.hasFocus():
+                self.end_year_combo.setFocus()
+            else:
+                self.check_and_accept()
+            event.accept()
         else:
-            super().keyPressEvent(event) 
+            event.ignore()    
 
     def update_end_year_options(self):
         start_year_index = self.start_year_combo.currentIndex()
@@ -267,7 +342,7 @@ class CompanyForm(QDialog):
                 self.accept()
 
     def show_warning(self, message, title='Warning'):
-        QMessageBox.warning(self, title, message)   
+        QMessageBox.warning(self, title, message)
 
 class MyTableWidget(QTableWidget):
     registrationFormOpened = pyqtSignal(bool)
@@ -363,24 +438,8 @@ class BasicWindow(QWidget):
         elif event.key() == Qt.Key.Key_F5:
             # Handle F5 key press to refresh the table
             self.populate_table()  # Call the method to populate the table
-            self.show_refresh_indicator()  # Show the refresh indicator
         else:
             super().keyPressEvent(event)
-
-    def show_refresh_indicator(self):
-        # Create a QLabel for refresh indicator
-        if not self.refresh_label:
-            self.refresh_label = QLabel('Refreshing...', self)
-            self.refresh_label.setStyleSheet('background-color: #ffff00; color: #000000; font-weight: bold; padding: 5px;')
-            self.layout().addWidget(self.refresh_label)
-            QTimer.singleShot(2000, self.hide_refresh_indicator)  # Hide the indicator after 2 seconds
-
-    def hide_refresh_indicator(self):
-        # Remove the refresh indicator label
-        if self.refresh_label:
-            self.layout().removeWidget(self.refresh_label)
-            self.refresh_label.deleteLater()
-            self.refresh_label = None
 
     def init_ui(self):
         # Set up the main window
